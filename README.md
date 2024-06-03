@@ -61,7 +61,7 @@ The code in this project is organized as follows:
     integration for implementing the telegram webhook backend.
 * [`docs`](docs): Folder with documents that will be deployed to S3 when deploying the stack components in
   [`hotel_aoss_kb_stack.py`](cdk/hotel_aoss_kb_stack.py).
-* [`lambda`](lambda). Lambda code. All lambdas are implemented in python with container runtimes.
+* [`lambda`](lambda): Lambda code. All lambdas are implemented in python with container runtimes.
   - [`collections`](lambda/collections): Lambda code implementing the
     [`CfnCustomResource`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.CfnCustomResource.html) that
     creates the index in the OpenSearch Serverless Collection.
@@ -71,6 +71,8 @@ The code in this project is organized as follows:
     [`CfnCustomResource`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.CfnCustomResource.html) that
     sets the API Gateway-backed backend as the Webhook for the Telegram Bot.
   - [`telegram_api`](lambda/telegram_api): Lambda code for handling the Telegram Webhook requests.
+* [`resources`](resources): Folder with Agent definition resources. Today it contains a text document with
+  the base agent prompt.
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
 
