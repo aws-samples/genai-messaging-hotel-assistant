@@ -76,6 +76,12 @@ The code in this project is organized as follows:
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
 
+# References
+
+[This project](https://github.com/build-on-aws/building-gen-ai-whatsapp-assistant-with-amazon-bedrock-and-python)
+exposes LangChain agents using Whatsapp. It provides more chat-related functionality, while this project provides more
+thorough infrastructure as code foundation. Go check it out!
+
 # Appendix
 
 This code interacts with Telegram Bot API which has terms published at https://telegram.org/tos/bot-developers.
