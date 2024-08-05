@@ -32,6 +32,7 @@ The diagram below describes the current architecture of the solution.
 * [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
 * [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key.
+* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key.
 
 # Setup
 
@@ -44,7 +45,7 @@ In the root folder of this repo, run:
 # Only run the following if running in Podman, skip it if you're using Docker
 export CDK_DOCKER=podman
 # Deploy providing the API key you got when creating the new Telegram bot
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}"
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
 ```
 
 # Code structure

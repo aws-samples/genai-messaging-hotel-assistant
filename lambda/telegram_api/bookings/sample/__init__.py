@@ -76,6 +76,8 @@ def get_reservations_by_chat_id(chat_id: int,
     Parameters
     ----------
     chat_id : ID of the chat for the person whose reservation we want to retrieve
+    fallback_name : Name to use if a reservation could not be found. Use this if you want to always return
+                    at least one reservation regardless of whether one can be found in `sample_reservations`.
     """
     reservations = [r for r in sample_reservations if any([g.chat_id == chat_id for g in r.guests])]
     if len(reservations) > 0 or fallback_name is None:
@@ -88,6 +90,29 @@ def get_reservations_by_chat_id(chat_id: int,
                                       birth_date=date(year=1984, month=6, day=2),
                                       member_level=MemberType.GOLD,
                                       chat_id=114649997)],
-                        start_date=date(year=2024, month=5, day=29),
-                        end_date=date(year=2024, month=6, day=5),
+                        start_date=date(year=2024, month=7, day=5),
+                        end_date=date(year=2024, month=7, day=12),
                         room_number=126)]
+
+
+def get_chatbot_session_attrs(chat_id: int,
+                              main_guest_name: str | None = None) -> dict[str, str]:
+    """
+    Get the session attributes for the reservation in a format suitable to be used by Bedrock Agents
+    """
+    # Get the reservations details
+    reservations = get_reservations_by_chat_id(chat_id=chat_id, fallback_name=main_guest_name)
+    if len(reservations) == 0:
+        return {}
+
+    # Get the first reservation available
+    # TODO: this might be in the past!
+    reservation = sorted(reservations, key=lambda r: r.start_date)[0]
+
+    return {'mainGuestName': main_guest_name,
+            'hotelName': reservation.hotel.name,
+            'roomNumber': f'{reservation.room_number}',
+            'checkInDate': reservation.start_date.isoformat(),
+            'checkoutDate': reservation.end_date.isoformat(),
+            'adultGuests': ', '.join([g.name for g in reservation.guests if not g.is_minor]),
+            'minorGuests': ', '.join([g.name for g in reservation.guests if g.is_minor])}

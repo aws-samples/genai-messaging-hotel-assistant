@@ -67,8 +67,7 @@ class AgentWithAOSSKB(Construct):
                               id='AgentRole',
                               role_name='AmazonBedrockExecutionRoleForAgents-HotelGenAI',
                               assumed_by=iam.ServicePrincipal('bedrock.amazonaws.com'))
-        base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
-            managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
+        base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         index_lambda_role = iam.Role(scope=self,
                                      id='IndexCreatorLambdaRole',
                                      assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),

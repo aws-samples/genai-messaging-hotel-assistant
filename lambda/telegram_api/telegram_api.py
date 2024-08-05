@@ -5,11 +5,11 @@ import asyncio
 import logging
 from datetime import date
 import telegram.constants
+from bookings.guests import MemberType
 from botocore.exceptions import ClientError
-from bookings.guests import Guest, MemberType
 from telegram.ext._contexttypes import ContextTypes
-from bookings.sample import get_reservations_by_chat_id
 from telegram import Update, InputMediaDocument, InputMediaPhoto
+from bookings.sample import get_reservations_by_chat_id, get_chatbot_session_attrs
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 # Get global objects we'll use throughout the code
@@ -34,7 +34,10 @@ async def handle_telegram_msg(telegram_app, body):
 
 # Example handler
 async def start(update, _: ContextTypes.DEFAULT_TYPE):
-    """Look for the reservation info on /start message."""
+    """Introduce ourselves and present reservation info on /start message."""
+    # Set the typing indicator
+    await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
+
     # Invalidate any previous Bedrock Agents session
     agents_runtime.invoke_agent(agentId=AGENT_ID,
                                 agentAliasId=AGENT_ALIAS_ID,
@@ -45,13 +48,10 @@ async def start(update, _: ContextTypes.DEFAULT_TYPE):
     user_reservations = get_reservations_by_chat_id(update.message.from_user.id,
                                                     fallback_name=update.message.from_user.first_name)
     if len(user_reservations) == 0:
-        await update.message.reply_text(f'Thanks for getting in touch with us, '
+        await update.message.reply_text(f'Thanks for getting in touch with me, '
                                         f'{update.message.from_user.first_name}. I cannot find any '
                                         'reservations for you; you can book a room in our website.')
         return
-
-    # Set the typing indicator
-    await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
 
     # Get the next reservation
     reservation = sorted(user_reservations, key=lambda r: r.start_date)[0]
@@ -113,10 +113,17 @@ async def respond_with_agent(update: Update, _: ContextTypes.DEFAULT_TYPE) -> No
     """
     # Set the typing indicator, then invoke agent and return its response
     await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
+
+    # Get the session attributes. I guess I could send these only once, but since
+    # the lambda is stateless I have no good way of knowing if I have already sent them
+    session_attrs = get_chatbot_session_attrs(chat_id=update.message.from_user.id,
+                                              main_guest_name=update.message.from_user.first_name)
+
     for _ in range(2):
         response = agents_runtime.invoke_agent(agentId=AGENT_ID,
                                                agentAliasId=AGENT_ALIAS_ID,
                                                sessionId=f'{update.message.chat_id}',
+                                               sessionState={'sessionAttributes': session_attrs},
                                                inputText=update.message.text)
         completion = ''
         try:

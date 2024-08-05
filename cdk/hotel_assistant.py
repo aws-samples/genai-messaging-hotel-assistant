@@ -14,10 +14,17 @@ class HotelAssistantStack(Stack):
                                    construct_id='HotelAgentKB',
                                    agent_instructions=(Path('resources') / 'agent_prompt.txt').read_text())
         # Create the Messaging backend Lambda-powered API Gateway
-        api_key = CfnParameter(self, 'TelegramAPIKey', type='String',
-                               description='The Telegram API key', no_echo=True)
+        telegram_api_key = CfnParameter(self, 'TelegramAPIKey',
+                                        type='String',
+                                        description='The Telegram API key',
+                                        no_echo=True)
+        whatsapp_api_key = CfnParameter(self, 'WhatsaAppAPIKey',
+                                        type='String',
+                                        description='The WhatsApp API key',
+                                        no_echo=True)
         backend = MessagingBackend(scope=self,
                                    construct_id='HotelAgentBackend',
                                    agent=kb_stack.agent,
                                    agent_alias=kb_stack.agent_alias,
-                                   telegram_api_key=api_key)
+                                   telegram_api_key=telegram_api_key,
+                                   whatsapp_api_key=whatsapp_api_key)
