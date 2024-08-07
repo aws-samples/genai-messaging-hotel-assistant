@@ -15,9 +15,21 @@ def _parseint(number: str | float, fallback_value=0):
         return fallback_value
 
 
-def parse_request(body: dict):
+def handle_subscription(body: dict):
     """
-    Parse a Webhook request, returning the native Message data
+    Handle the subscription request and respond to it
+
+    https://developers.facebook.com/docs/graph-api/webhooks/getting-started/
+
+    Parameters
+    ==========
+    * body : Dictionary with the request
+    """
+
+
+def handle_request(body: dict) -> list[TextMessage]:
+    """
+    Parse a Webhook request containing new messages, returning the native Message data
 
     This function will try to do some message validation, but
     should not considered to be entirely safe to use.

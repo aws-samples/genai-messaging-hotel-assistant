@@ -66,6 +66,8 @@ class MessagingBackend(Construct):
                                     secret_string_value=SecretValue.unsafe_plain_text(telegram_api_key.value_as_string))
         whatsapp_secret = sm.Secret(self, 'WhatsAppAPIKeySecret',
                                     secret_string_value=SecretValue.unsafe_plain_text(whatsapp_api_key.value_as_string))
+        whatsapp_verify_token_secret = sm.Secret(self, 'WhatsAppAPIVerifyToken',
+                                                 secret_name='WhatsAppAPIVerifyToken')
         base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
             managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         telegram_lambda_role = iam.Role(scope=self,
@@ -86,6 +88,7 @@ class MessagingBackend(Construct):
                                                                resources=[agent_alias.attr_agent_alias_arn],
                                                                actions=['bedrock:InvokeAgent']))
         whatsapp_secret.grant_read(whatsapp_lambda_role)
+        whatsapp_verify_token_secret.grant_read(whatsapp_lambda_role)
         # Telegram API-related resources
         image = lambda_.DockerImageCode.from_image_asset(telegram_backend_lamda_dir.as_posix(),
                                                          platform=lambda_platform)
@@ -117,7 +120,7 @@ class MessagingBackend(Construct):
                                                            id='WhatsAppAPI',
                                                            code=image,
                                                            architecture=lambda_architecture,
-                                                           environment={'WHATSAPP_VERIFY_TOKEN': 'testing_panda',
+                                                           environment={'WHATSAPP_VERIFY_TOKEN_NAME': whatsapp_verify_token_secret.secret_name,
                                                                         'AGENT_ID': agent.attr_agent_id,
                                                                         'AGENT_ALIAS_ID': agent_alias.attr_agent_alias_id,
                                                                         'SECRET_NAME': whatsapp_secret.secret_name},

@@ -8,6 +8,7 @@ import logging
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
 WHATSAPP_API_KEY = sm.get_secret_value(SecretId=os.environ.get('SECRET_NAME')).get('SecretString', '__INVALID__')
+WHATSAPP_API_VERIFY_TOKEN = sm.get_secret_value(SecretId=os.environ.get('WHATSAPP_VERIFY_TOKEN_NAME')).get('SecretString', '__INVALID__')
 
 
 async def send_msg(bot_phone_number: str, recipient_phone_number: str, msg_text: str, token: str):
@@ -33,7 +34,7 @@ async def main(event):
             match event['queryStringParameters']['hub.mode']:
                 case 'subscribe':
                     verify_token = event['queryStringParameters']['hub.verify_token']
-                    if verify_token == os.environ.get('WHATSAPP_VERIFY_TOKEN'):
+                    if verify_token == WHATSAPP_API_VERIFY_TOKEN:
                         print('Subscription correct!!')
                         return {'statusCode': 200,
                                 'body': int(event['queryStringParameters']['hub.challenge']),
