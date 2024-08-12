@@ -2,7 +2,7 @@ import logging
 import mimetypes
 from datetime import datetime
 from httpx import URL, AsyncClient
-from whatsapp.message import BaseMessage, ImageMessage, TextMessage
+from whatsapp.message import BaseMessage, MediaMessage, TextMessage
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
                        'https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components for details')
@@ -24,8 +24,8 @@ class WhatsAppApplication:
         """
         if isinstance(msg, TextMessage):
             return await self._send_generic_msg(msg)
-        elif isinstance(msg, ImageMessage):
-            return await self._send_image_msg(msg)
+        elif isinstance(msg, MediaMessage):
+            return await self._send_media_msg(msg)
 
     async def _send_generic_msg(self, msg: BaseMessage):
         """
@@ -36,7 +36,7 @@ class WhatsAppApplication:
                                                 'Content-Type': 'application/json'},
                                        data=await msg.serialize())
 
-    async def _send_image_msg(self, msg: ImageMessage):
+    async def _send_media_msg(self, msg: MediaMessage):
         """
         Upload the image to Meta's servers, then send the message
 
@@ -44,14 +44,13 @@ class WhatsAppApplication:
         https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media
         """
         # First upload the image, that'll give us a media ID
-        mime_type = mimetypes.guess_type(msg.image_name)[0]
         response = await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/media',
                                            headers={'Authorization': f'Bearer {self._token}'},
-                                           data={'type': mime_type,
+                                           data={'type': msg.mime_type,
                                                  'messaging_product': 'whatsapp'},
-                                           files={'file': (msg.image_name, msg.image, mime_type)})
+                                           files={'file': (msg.media_name, msg.media, msg.mime_type)})
         response.raise_for_status()
-        msg.set_image_id(response.json().get('id'))
+        msg.media_id = response.json().get('id')
         # Now we can send the image normally
         return await self._send_generic_msg(msg)
 
