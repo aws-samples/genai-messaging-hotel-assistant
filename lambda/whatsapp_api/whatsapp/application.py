@@ -1,7 +1,8 @@
 import logging
+import mimetypes
 from datetime import datetime
 from httpx import URL, AsyncClient
-from whatsapp.message import TextMessage
+from whatsapp.message import BaseMessage, ImageMessage, TextMessage
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
                        'https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components for details')
@@ -15,15 +16,40 @@ class WhatsAppApplication:
         self._base_url = URL(f'https://graph.facebook.com/{protocol_version}/messages')
         self._client = client
         self._token = whatsapp_token
+        self._protocol_version = protocol_version
 
-    async def send_msg(self, msg: TextMessage):
+    async def send_msg(self, msg: BaseMessage):
         """
         Send a message to the given WhatsApp ID
         """
-        return await self._client.post(f'https://graph.facebook.com/v20.0/{msg.sender_id}/messages',
+        if isinstance(msg, TextMessage):
+            return await self._send_generic_msg(msg)
+        elif isinstance(msg, ImageMessage):
+            return await self._send_image_msg(msg)
+
+    async def _send_image_msg(self, msg: ImageMessage):
+        """
+        Upload the image to Meta's servers, then send the message
+
+        Only image/jpeg & image/png are supported by WhatsApp
+        """
+        # First upload the image, that'll give us a media ID
+        response = await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/media',
+                                           headers={'Authorization': f'Bearer {self._token}',
+                                                    'Content-Type': 'application/json'},
+                                           data={'type': mimetypes.guess_type(msg.image_name)[0],
+                                                 'messaging_product': 'whatsapp'},
+                                           files={'file': msg.image})
+        response.raise_for_status()
+        msg.set_image_id(response.json().get('id'))
+        # Now we can send the image normally
+        return await self._send_generic_msg(msg)
+
+    async def _send_generic_msg(self, msg: BaseMessage):
+        return await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/messages',
                                        headers={'Authorization': f'Bearer {self._token}',
                                                 'Content-Type': 'application/json'},
-                                       data=msg.serialize())
+                                       data=await msg.serialize())
 
     @staticmethod
     def parse_request(body: dict) -> list[TextMessage]:
