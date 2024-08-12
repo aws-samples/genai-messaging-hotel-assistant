@@ -27,29 +27,33 @@ class WhatsAppApplication:
         elif isinstance(msg, ImageMessage):
             return await self._send_image_msg(msg)
 
-    async def _send_image_msg(self, msg: ImageMessage):
-        """
-        Upload the image to Meta's servers, then send the message
-
-        Only image/jpeg & image/png are supported by WhatsApp
-        """
-        # First upload the image, that'll give us a media ID
-        response = await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/media',
-                                           headers={'Authorization': f'Bearer {self._token}',
-                                                    'Content-Type': 'application/json'},
-                                           data={'type': mimetypes.guess_type(msg.image_name)[0],
-                                                 'messaging_product': 'whatsapp'},
-                                           files={'file': msg.image})
-        response.raise_for_status()
-        msg.set_image_id(response.json().get('id'))
-        # Now we can send the image normally
-        return await self._send_generic_msg(msg)
-
     async def _send_generic_msg(self, msg: BaseMessage):
+        """
+        Send a generic message type that requires no specific handling other than serialization
+        """
         return await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/messages',
                                        headers={'Authorization': f'Bearer {self._token}',
                                                 'Content-Type': 'application/json'},
                                        data=await msg.serialize())
+
+    async def _send_image_msg(self, msg: ImageMessage):
+        """
+        Upload the image to Meta's servers, then send the message
+
+        Only image/jpeg & image/png are supported by WhatsApp as described in
+        https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media
+        """
+        # First upload the image, that'll give us a media ID
+        mime_type = mimetypes.guess_type(msg.image_name)[0]
+        response = await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/media',
+                                           headers={'Authorization': f'Bearer {self._token}'},
+                                           data={'type': mime_type,
+                                                 'messaging_product': 'whatsapp'},
+                                           files={'file': (msg.image_name, msg.image, mime_type)})
+        response.raise_for_status()
+        msg.set_image_id(response.json().get('id'))
+        # Now we can send the image normally
+        return await self._send_generic_msg(msg)
 
     @staticmethod
     def parse_request(body: dict) -> list[TextMessage]:
@@ -57,7 +61,7 @@ class WhatsAppApplication:
         Parse a Webhook request containing new messages, returning the native Message data
 
         This function will try to do some message validation, but
-        should not considered to be entirely safe to use.
+        should not be considered to be entirely safe to use.
 
         Parameters
         ==========
@@ -81,8 +85,8 @@ class WhatsAppApplication:
 
         for entry in body['entry']:
             # Here we have a list of entries; for each entry the `id` field contains the WhatsApp
-            # Business ID the webhook is subscribed to, since each webhook could be shared by more than one application
-            # and we might get more than one entry
+            # Business ID the webhook is subscribed to, since each webhook could be shared by more than
+            # one application and we might get more than one entry
             # We'll ignore it for this simple usecase
             if 'changes' not in entry:
                 raise ValueError(ERROR_MSG_MALFORMED)
@@ -139,6 +143,9 @@ class WhatsAppApplication:
         Parameters
         ==========
         * event : Dictionary with the request
+        * whatsapp_verify_token : Token expected to be present in the subscription request.
+                                  You should provide this in the Meta Application pannel
+                                  when creating your app.
         """
         match event['hub.mode']:
             case 'subscribe':
