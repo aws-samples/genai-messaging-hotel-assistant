@@ -44,9 +44,22 @@ In the root folder of this repo, run:
 ```bash
 # Only run the following if running in Podman, skip it if you're using Docker
 export CDK_DOCKER=podman
-# Deploy providing the API key you got when creating the new Telegram bot
+# Deploy providing the API key you got when creating the new Telegram & WhatsApp bots
 cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
 ```
+
+The telegram bot should now be working, you will have to manually configure the 
+[WhatsApp webhook](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks).
+
+Go to your application in the Facebook developer portal and in the left menu go to WhatsApp > Configuration;
+use the value of `HotelAssistant.GenAIAssistantMessagingAPIEndpoint` from the CDK deployment `Outputs` section
+and from the `WhatsAppAPIVerifyToken` secret in AWS Secrets Manager and use them for configuring the WhatsApp
+Webhook as shown in the following image.
+
+![A screenshot of the Facebook developer WhatsApp configuration page showing an example of how to configure the webhook for the CDK-deployed solution, with secret fields redacted with black rectangles.](img/whatsapp_webhook_configuration.png "WhatsApp webhook configuration example")
+
+After that, the WhatsApp should now be working. You can start a discussion as described [below](#whatsapp).
+
 
 # Code structure
 
