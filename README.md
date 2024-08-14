@@ -83,7 +83,8 @@ The code in this project is organized as follows:
     added/removed from the S3 bucket created during deployment.
   - [`set_webhook`](lambda/set_webhook): Lambda code implementing the 
     [`CfnCustomResource`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.CfnCustomResource.html) that
-    sets the API Gateway-backed backend as the Webhook for the Telegram Bot.
+    sets the API Gateway-backed backend as the Webhook for the Telegram Bot. The WhatsApp Webhook must be configured
+    manually as described [above](#setup).
   - [`telegram_api`](lambda/telegram_api): Lambda code for handling the Telegram Webhook requests.
   - [`whatsapp_api`](lambda/whatsapp_api): Lambda code for handling the WhatsApp Webhook requests.
 * [`resources`](resources): Folder with Agent definition resources. Today it contains a text document with
