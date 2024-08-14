@@ -30,8 +30,6 @@ async def start_new_conversation(app: WhatsAppApplication, sender_id: str, recip
     # Get the next reservation
     reservation = sorted(user_reservations, key=lambda r: r.start_date)[0]
     hotel_reference = reservation.hotel.name
-    if reservation.hotel.url is not None:
-        hotel_reference = f'[{hotel_reference}]({reservation.hotel.url})'
     msg = f"*We'll be expecting you in {hotel_reference} on {reservation.start_date}*\n\n"
     if reservation.start_date == date.today():
         msg = f'*Your stay in {hotel_reference} starts today*\n\n'
@@ -63,7 +61,7 @@ async def start_new_conversation(app: WhatsAppApplication, sender_id: str, recip
     # Send the hotel location as a reply to the main message
     await app.send_msg(LocationMessage(sender_id=sender_id,
                                        recipient_id=recipient_id,
-                                       latitutde=reservation.hotel.location.lat,
+                                       latitude=reservation.hotel.location.lat,
                                        longitude=reservation.hotel.location.lon,
                                        name=f'{reservation.hotel.name} location',
                                        address=reservation.hotel.location.address))

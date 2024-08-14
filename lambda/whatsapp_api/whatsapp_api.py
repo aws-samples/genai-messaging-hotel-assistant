@@ -34,20 +34,24 @@ async def main(event):
                                                  sender_id=sender_id,
                                                  recipient_id=recipient_id,
                                                  recipient_name=recipient_name)
-                messages = wa.parse_request(payload)
-                responses = [await wa.send_msg(TextMessage(text=message.text,
-                                                           sender_id=message.recipient_id,
-                                                           recipient_id=message.sender_id))
-                             for message in messages]
 
-                if any([r.status_code != 200 for r in responses]):
-                    return {'statusCode': 500,
-                            'body': 'Internal Server error',
-                            'isBase64Encoded': False}
+                    return {'statusCode': 200, 'body': 'Conversation started with contact', 'isBase64Encoded': False}
+                elif payload.get('object') == 'whatsapp_business_account':
+                    try:
+                        messages = wa.parse_request(payload)
+                    except ValueError:
+                        return {'statusCode': 400, 'body': 'Bad request', 'isBase64Encoded': False}
+                    responses = [await wa.send_msg(TextMessage(text=message.text,
+                                                               sender_id=message.recipient_id,
+                                                               recipient_id=message.sender_id))
+                                 for message in messages]
 
-                return {'statusCode': 200,
-                        'body': 'Message sent!',
-                        'isBase64Encoded': False}
+                    if any([r.status_code != 200 for r in responses]):
+                        return {'statusCode': 500, 'body': 'Internal Server error', 'isBase64Encoded': False}
+
+                    return {'statusCode': 200, 'body': 'Replied to the contact', 'isBase64Encoded': False}
+                else:
+                    return {'statusCode': 400, 'body': 'Bad request', 'isBase64Encoded': False}
 
 
 def handler(event, _):

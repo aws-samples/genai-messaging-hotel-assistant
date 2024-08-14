@@ -18,8 +18,8 @@ The solution relies on two main components:
 * An Amazon Bedrock agent powered by Anthropic Claude Haiku + Cohere Embed Multilingual for handling
   the conversations.
 * An [API Gateway](https://aws.amazon.com/api-gateway/) powered by the lambda code defined in
-  [`telegram_api`](lambda/telegram_api) that handles Telegram Webhook requests and, using the Bedrock
-  Agent, answers the user's requests.
+  [`telegram_api`](lambda/telegram_api) & [`whatsapp_api`](lambda/whatsapp_api) that handles Telegram & WhatsApp Webhook requests and, 
+  using the Bedrock Agent, answers the user's requests.
 
 The diagram below describes the current architecture of the solution.
 
@@ -72,10 +72,32 @@ The code in this project is organized as follows:
     [`CfnCustomResource`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.CfnCustomResource.html) that
     sets the API Gateway-backed backend as the Webhook for the Telegram Bot.
   - [`telegram_api`](lambda/telegram_api): Lambda code for handling the Telegram Webhook requests.
+  - [`whatsapp_api`](lambda/whatsapp_api): Lambda code for handling the WhatsApp Webhook requests.
 * [`resources`](resources): Folder with Agent definition resources. Today it contains a text document with
   the base agent prompt.
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
+
+# Using the bot
+
+## Telegram
+
+Search for the Telegram bot and start a conversation with them
+
+## WhatsApp
+
+In the case of the WhatsApp bot, it is the bot who should initiate the conversation. If your application is in
+development status you will only be able to write to registered phone numbers. You do that by sending a POST
+request to the endpoint provided by `cdk` as an output (search for `HotelAssistant.GenAIAssistantMessagingAPIEndpoint`).
+
+```bash
+curl -X POST "${API_ENDPOINT}/whatsapp" \
+     -d '{ "object":"new_conversation_request", "recipient_id":"${RECIPIENT_WHATSAPP_ID}", "sender_id":"${APPLICATION_PHONE_NUMBER_ID}", "recipient_name":"${RECIPIENT_NAME}"}'
+
+# Example
+# curl -X POST "https://aaaaaaaaaa.execute-api.us-west-2.amazonaws.com/prod/whatsapp" \
+#      -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "sender_id":"338822111111111", "recipient_name":"Joseba"}'
+```
 
 # References
 

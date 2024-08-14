@@ -87,12 +87,12 @@ class ImageMessage(MediaMessage):
 
 @dataclass
 class LocationMessage(BaseMessage):
-    latitutde: float
+    latitude: float
     longitude: float
     name: str
     address: str
 
-    async def serialize(self) -> dict[str: str | int]:
+    def serialize(self) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
@@ -102,7 +102,7 @@ class LocationMessage(BaseMessage):
                 'recipient_type': 'individual',
                 'to': self.recipient_id,
                 'type': 'location',
-                'location': {'latitude': self.latitutde,
+                'location': {'latitude': self.latitude,
                              'longitude': self.longitude,
                              'name': self.name,
                              'address': self.address}}

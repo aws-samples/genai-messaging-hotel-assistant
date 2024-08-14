@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from httpx import URL, AsyncClient
-from whatsapp.message import BaseMessage, MediaMessage, TextMessage
+from whatsapp.message import BaseMessage, MediaMessage, TextMessage, LocationMessage
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
                        'https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components for details')
@@ -21,10 +21,12 @@ class WhatsAppApplication:
         """
         Send a message to the given WhatsApp ID
         """
-        if isinstance(msg, TextMessage):
+        if isinstance(msg, (TextMessage, LocationMessage)):
             return await self._send_generic_msg(msg)
         elif isinstance(msg, MediaMessage):
             return await self._send_media_msg(msg)
+        else:
+            raise NotImplementedError(f'Cannot send message of type {type(msg)}')
 
     async def _send_generic_msg(self, msg: BaseMessage):
         """
@@ -74,7 +76,7 @@ class WhatsAppApplication:
         """
         # Input data sanity check
         if body['object'] != 'whatsapp_business_account':
-            raise NotImplementedError('Cannot parse unknown message format')
+            raise ValueError('Cannot parse unknown message format')
         if 'entry' not in body:
             raise ValueError(ERROR_MSG_MALFORMED)
 
@@ -92,7 +94,7 @@ class WhatsAppApplication:
             for change in entry.get('changes', []):
                 contacts = {}
                 if 'field' not in change or change.get('field') != 'messages':
-                    raise NotImplementedError('Cannot parse unknown message format')
+                    raise ValueError('Cannot parse unknown message format')
                 changes = change.get('value', {})
                 if changes.get('messaging_product') != 'whatsapp':
                     raise ValueError(ERROR_MSG_MALFORMED)
@@ -102,6 +104,10 @@ class WhatsAppApplication:
                     raise ValueError(ERROR_MSG_MALFORMED)
                 recipient = changes.get('metadata', {'display_phone_number': '__INVALID__'})['display_phone_number']
                 recipient_id = changes.get('metadata', {'phone_number_id': '__INVALID__'})['phone_number_id']
+                # Ignore status change (read notification) messages
+                if 'statuses' in changes:
+                    logging.debug(f'Skipping status message changes {changes}')
+                    continue
                 # contacts contains the sender data, we'll only get the first one
                 if 'contacts' not in changes:
                     raise ValueError(ERROR_MSG_MALFORMED)
