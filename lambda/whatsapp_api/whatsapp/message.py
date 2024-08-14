@@ -9,7 +9,7 @@ class BaseMessage:
     sender_id: str
     recipient_id: str
 
-    async def serialize(self) -> dict[str: str | int]:
+    def serialize(self) -> dict[str: str | int]:
         raise NotImplementedError('This method must be implemented by derived classes')
 
 
@@ -22,7 +22,7 @@ class TextMessage(BaseMessage):
     sender: str = ''
     preview_url: bool = True
 
-    async def serialize(self) -> dict[str: str | int]:
+    def serialize(self) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
@@ -45,7 +45,7 @@ class MediaMessage(BaseMessage):
 
     def __post_init__(self):
         """
-        Assign calculated variables when needed
+        Assign guessed variables when needed
         """
         if self.mime_type is None:
             self.mime_type = mimetypes.guess_type(self.media_name)[0]
@@ -59,13 +59,16 @@ class ImageMessage(MediaMessage):
     recipient: str = ''
     sender: str = ''
 
-    async def serialize(self) -> dict[str: str | int]:
+    def serialize(self) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
         The serialized message is not self-contained, since the message's image has to be
         uploaded to Meta's servers in advance and the returned reference is what is included
-        in the serialized message, so this method will actually do that for you.
+        in the serialized message, so this method will fail if `media_id` has not been set.
+
+        In order to send this kind of message use `WhatsAppApplication`'s `send_msg` method
+        which will actually upload the media to Meta's servers before sending the message.
 
         https://developers.facebook.com/docs/whatsapp/cloud-api/messages/image-messages
         """
@@ -80,3 +83,26 @@ class ImageMessage(MediaMessage):
                 'type': 'image',
                 'image': {'id': self.media_id,
                           'caption': self.caption}}
+
+
+@dataclass
+class LocationMessage(BaseMessage):
+    lat: float
+    lon: float
+    name: str
+    address: str
+
+    async def serialize(self) -> dict[str: str | int]:
+        """
+        Serialize the message into a dictionary that can be sent using the Meta API
+
+        https://developers.facebook.com/docs/whatsapp/cloud-api/messages/location-messages
+        """
+        return {'messaging_product': 'whatsapp',
+                'recipient_type': 'individual',
+                'to': self.recipient_id,
+                'type': 'location',
+                'location': {'latitude': self.lat,
+                             'longitude': self.lon,
+                             'name': self.name,
+                             'address': self.address}}

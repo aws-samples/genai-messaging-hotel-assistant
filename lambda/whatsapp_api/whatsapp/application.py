@@ -34,7 +34,7 @@ class WhatsAppApplication:
         return await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/messages',
                                        headers={'Authorization': f'Bearer {self._token}',
                                                 'Content-Type': 'application/json'},
-                                       data=await msg.serialize())
+                                       data=msg.serialize())
 
     async def _send_media_msg(self, msg: MediaMessage):
         """
