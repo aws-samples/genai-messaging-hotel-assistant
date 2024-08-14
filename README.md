@@ -31,8 +31,8 @@ The diagram below describes the current architecture of the solution.
 * [CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html)
 * [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
-* [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key.
-* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key.
+* [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
+* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key in WhatsApp > API Setup from the app page in the Facebook developer portal.
 
 # Setup
 
