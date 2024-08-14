@@ -20,7 +20,7 @@ class TextMessage(BaseMessage):
     msg_id: str = ''
     recipient: str = ''
     sender: str = ''
-    preview_url: bool = True
+    preview_links: bool = True
 
     def serialize(self) -> dict[str: str | int]:
         """
@@ -32,7 +32,7 @@ class TextMessage(BaseMessage):
                 'recipient_type': 'individual',
                 'to': self.recipient_id,
                 'type': 'text',
-                'text': json.dumps({'preview_url': self.preview_url,
+                'text': json.dumps({'preview_url': self.preview_links,
                                     'body': self.text})}
 
 

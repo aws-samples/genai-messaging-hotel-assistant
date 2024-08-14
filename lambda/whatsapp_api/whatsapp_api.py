@@ -4,9 +4,8 @@ import boto3
 import httpx
 import asyncio
 import logging
-from whatsapp.message import TextMessage
 from whatsapp.application import WhatsAppApplication
-from conversation.handler import start_new_conversation
+from conversation.handler import start_new_conversation, respond_with_agent
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
@@ -41,13 +40,8 @@ async def main(event):
                         messages = wa.parse_request(payload)
                     except ValueError:
                         return {'statusCode': 400, 'body': 'Bad request', 'isBase64Encoded': False}
-                    responses = [await wa.send_msg(TextMessage(text=message.text,
-                                                               sender_id=message.recipient_id,
-                                                               recipient_id=message.sender_id))
-                                 for message in messages]
-
-                    if any([r.status_code != 200 for r in responses]):
-                        return {'statusCode': 500, 'body': 'Internal Server error', 'isBase64Encoded': False}
+                    for msg in messages:
+                        await respond_with_agent(msg, app=wa, sender_id=msg.recipient_id, recipient_id=msg.sender_id)
 
                     return {'statusCode': 200, 'body': 'Replied to the contact', 'isBase64Encoded': False}
                 else:
@@ -55,6 +49,4 @@ async def main(event):
 
 
 def handler(event, _):
-    logging.error(event)
-
     return asyncio.run(main(event))

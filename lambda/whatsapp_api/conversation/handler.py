@@ -1,12 +1,17 @@
+import logging
 from datetime import date
 from bookings.guests import MemberType
+from botocore.exceptions import ClientError
 from whatsapp.application import WhatsAppApplication
 from . import agents_runtime, AGENT_ID, AGENT_ALIAS_ID
 from bookings.sample import get_reservations_by_chat_id
 from whatsapp.message import ImageMessage, LocationMessage, TextMessage
 
 
-async def start_new_conversation(app: WhatsAppApplication, sender_id: str, recipient_id: str, recipient_name: str):
+async def start_new_conversation(app: WhatsAppApplication,
+                                 sender_id: str,
+                                 recipient_id: str,
+                                 recipient_name: str) -> None:
     """
     Introduce ourselves and present reservation info on new conversation request message.
     """
@@ -80,3 +85,54 @@ async def start_new_conversation(app: WhatsAppApplication, sender_id: str, recip
                                         media=reservation.digital_room_key,
                                         media_name=f'Room {reservation.room_number}.png',
                                         caption=msg))
+
+
+async def respond_with_agent(msg: TextMessage,
+                             app: WhatsAppApplication,
+                             sender_id: str,
+                             recipient_id: str) -> None:
+    """
+    Process a normal user message using the given Bedrock Agent
+    """
+    for _ in range(2):
+        response = agents_runtime.invoke_agent(agentId=AGENT_ID,
+                                               agentAliasId=AGENT_ALIAS_ID,
+                                               sessionId=f'{recipient_id}',
+                                               inputText=msg.text)
+        completion = ''
+        try:
+            for event in response.get('completion'):
+                chunk = event['chunk']
+                completion = completion + chunk['bytes'].decode()
+
+            if len(completion) == 0:
+                await app.send_msg(TextMessage(sender_id=sender_id,
+                                               recipient_id=recipient_id,
+                                               text='Let me think...',
+                                               preview_links=False))
+                continue
+        except ClientError as e:
+            logging.exception(e)
+            await app.send_msg(TextMessage(sender_id=sender_id,
+                                           recipient_id=recipient_id,
+                                           text='Let me think...',
+                                           preview_links=False))
+            continue
+        except KeyError as e:
+            logging.exception(e)
+            await app.send_msg(TextMessage(sender_id=sender_id,
+                                           recipient_id=recipient_id,
+                                           text='Let me think...',
+                                           preview_links=False))
+            continue
+        await app.send_msg(TextMessage(sender_id=sender_id,
+                                       recipient_id=recipient_id,
+                                       text=completion,
+                                       preview_links=True))
+        return
+
+    await app.send_msg(TextMessage(sender_id=sender_id,
+                                   recipient_id=recipient_id,
+                                   text="I'm sorry, I cannot find that information. You can find out more "
+                                        "about this in the hotel reception.",
+                                   preview_links=True))
