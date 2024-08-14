@@ -1,5 +1,4 @@
 import logging
-import mimetypes
 from datetime import datetime
 from httpx import URL, AsyncClient
 from whatsapp.message import BaseMessage, MediaMessage, TextMessage

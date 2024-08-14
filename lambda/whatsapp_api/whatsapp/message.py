@@ -87,8 +87,8 @@ class ImageMessage(MediaMessage):
 
 @dataclass
 class LocationMessage(BaseMessage):
-    lat: float
-    lon: float
+    latitutde: float
+    longitude: float
     name: str
     address: str
 
@@ -102,7 +102,7 @@ class LocationMessage(BaseMessage):
                 'recipient_type': 'individual',
                 'to': self.recipient_id,
                 'type': 'location',
-                'location': {'latitude': self.lat,
-                             'longitude': self.lon,
+                'location': {'latitude': self.latitutde,
+                             'longitude': self.longitude,
                              'name': self.name,
                              'address': self.address}}

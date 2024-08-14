@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 class Location:
     lon: float
     lat: float
+    address: str | None = None
 
 
 @dataclass

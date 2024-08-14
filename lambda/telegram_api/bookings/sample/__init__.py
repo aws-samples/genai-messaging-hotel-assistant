@@ -6,7 +6,7 @@ from bookings.reservations import Reservation
 
 # Create some sample data
 sample_hotel = Hotel(name='Costa Tartessos Luxury Resort',
-                     location=Location(lon=-6.1609661, lat=36.3407887),
+                     location=Location(lon=-6.1609661, lat=36.3407887, address='Chiclana de la Frontera, Cádiz'),
                      stars=5,
                      url='https://aws.amazon.com/bedrock/',
                      poster=(Path('bookings') / 'sample' / 'poster.jpg').read_bytes())
@@ -65,7 +65,7 @@ sample_reservations = [Reservation(hotel=sample_hotel,
                                    room_number=306)]
 
 
-def get_reservations_by_chat_id(chat_id: int,
+def get_reservations_by_chat_id(chat_id: int | str,
                                 fallback_name: str | None = None) -> list[Reservation]:
     """
     Get the reservations (if any) for a given chat_id

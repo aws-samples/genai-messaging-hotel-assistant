@@ -6,6 +6,7 @@ import asyncio
 import logging
 from whatsapp.message import TextMessage
 from whatsapp.application import WhatsAppApplication
+from conversation.handler import start_new_conversation
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
@@ -23,7 +24,17 @@ async def main(event):
                 return wa.handle_subscription(event['queryStringParameters'], WHATSAPP_API_VERIFY_TOKEN)
             case 'POST':
                 # Get the text message and the sender phone number
-                messages = wa.parse_request(json.loads(event['body']))
+                payload = json.loads(event['body'])
+                # Handle new conversation requests separately from regular messages
+                if payload.get('object') == 'new_conversation_request':
+                    recipient_id = payload.get('recipient_id')
+                    recipient_name = payload.get('recipient_name')
+                    sender_id = payload.get('sender_id')
+                    await start_new_conversation(wa,
+                                                 sender_id=sender_id,
+                                                 recipient_id=recipient_id,
+                                                 recipient_name=recipient_name)
+                messages = wa.parse_request(payload)
                 responses = [await wa.send_msg(TextMessage(text=message.text,
                                                            sender_id=message.recipient_id,
                                                            recipient_id=message.sender_id))
