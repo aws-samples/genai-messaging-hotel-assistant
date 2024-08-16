@@ -32,7 +32,8 @@ The diagram below describes the current architecture of the solution.
 * [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
 * [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
-* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key in WhatsApp > API Setup from the app page in the Facebook developer portal.
+* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key & Phone ID in WhatsApp > API Setup from the 
+  app page in the Facebook developer portal.
 
 # Setup
 
@@ -45,7 +46,9 @@ In the root folder of this repo, run:
 # Only run the following if running in Podman, skip it if you're using Docker
 export CDK_DOCKER=podman
 # Deploy providing the API key you got when creating the new Telegram & WhatsApp bots
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}" --parameters WhatsaAppPhoneID="{WHATSAPP_ID}"
+# You can now optionally get the WhatsAppAPIVerifyToken value as follows
+aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query SecretString
 ```
 
 The telegram bot should now be working, you will have to manually configure the 

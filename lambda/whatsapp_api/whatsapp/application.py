@@ -1,6 +1,9 @@
 import logging
 from datetime import datetime
 from httpx import URL, AsyncClient
+from whatsapp.update import Update
+from whatsapp.contact import Contact
+from whatsapp.conversation import Conversation
 from whatsapp.message import BaseMessage, MediaMessage, TextMessage, LocationMessage
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
@@ -8,36 +11,74 @@ ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
 
 
 class WhatsAppApplication:
-    def __init__(self, whatsapp_token: str, client: AsyncClient, protocol_version: str = 'v20.0'):
+    def __init__(self, whatsapp_token: str, whatsapp_id: str, client: AsyncClient, protocol_version: str = 'v20.0'):
         """
         Application that can be used for talking to the WhatsApp-enable Meta application
+
+        Parameters
+        ----------
+        whatsapp_token : API token for the application. Get this from the Meta developer App Dashboard
+        whatsapp_id: Phone number ID to send messages from. Get this from the Meta developer App Dashboard
+        client: Async client to use for communicating with Meta's servers
+        protocol_version: WhatsApp API protocol version to use
         """
-        self._base_url = URL(f'https://graph.facebook.com/{protocol_version}/messages')
+        self._base_url = URL(f'https://graph.facebook.com/{protocol_version}/')
         self._client = client
+        self._whastapp_id = whatsapp_id
         self._token = whatsapp_token
         self._protocol_version = protocol_version
+        self._conversations = {}
+        self.contact = Contact(whatsapp_id=whatsapp_id)
+        self._contacts = {}
 
-    async def send_msg(self, msg: BaseMessage):
+    async def send_msg(self, msg: BaseMessage, conversation: Conversation = None, recipient_id: str = None):
         """
-        Send a message to the given WhatsApp ID
+        Send a message to a conversation
+
+        Parameters
+        ----------
+        msg: Message to send to the destination
+        conversation: Conversation where the message should be sent to.
+                      Cannot be `None` if `recipient_id` is also `None`.
+        recipient_id: WhatsApp phone number of the recipient. Will only be used if `conversation` is `None`.
+                      Cannot be `None` if `conversation` is also `None`.
         """
+        if conversation is None and (recipient_id is None or len(recipient_id) == 0):
+            raise ValueError('conversation and recipient_id cannot be both be empty')
+
+        # Determine the conversation we should send the message to if not provided
+        if conversation is None:
+            conversation = self.get_conversations({Contact(whatsapp_id=recipient_id)})
+
         if isinstance(msg, (TextMessage, LocationMessage)):
-            return await self._send_generic_msg(msg)
+            retval = await self._send_generic_msg(msg, conversation)
         elif isinstance(msg, MediaMessage):
-            return await self._send_media_msg(msg)
+            retval = await self._send_media_msg(msg, conversation)
         else:
             raise NotImplementedError(f'Cannot send message of type {type(msg)}')
 
-    async def _send_generic_msg(self, msg: BaseMessage):
+        # Finally, register the message in the list of conversations
+        self._conversations[conversation.frozen_participants].messages.append(Update(sender=self.contact,
+                                                                                     msg=msg,
+                                                                                     conversation=conversation))
+
+        return retval
+
+    async def _send_generic_msg(self, msg: BaseMessage, conversation: Conversation):
         """
         Send a generic message type that requires no specific handling other than serialization
         """
-        return await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/messages',
+        # We will send the message to the first member of the conversation that is not the bot
+        # This is probably fine, since WhatsApp bots send messages on a 1:1 basis and cannot
+        # send messages to a group, but the method is a bit fragile.
+        # This is because the WhatsApp API has no concept of conversations itself and we're
+        # emulating those
+        return await self._client.post(f'{self._base_url}/{self._whastapp_id}/messages',
                                        headers={'Authorization': f'Bearer {self._token}',
                                                 'Content-Type': 'application/json'},
-                                       data=msg.serialize())
+                                       data=msg.serialize(recipient=(conversation.participants - {self.contact}).pop()))
 
-    async def _send_media_msg(self, msg: MediaMessage):
+    async def _send_media_msg(self, msg: MediaMessage, conversation: Conversation):
         """
         Upload the image to Meta's servers, then send the message
 
@@ -45,7 +86,7 @@ class WhatsAppApplication:
         https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media
         """
         # First upload the image, that'll give us a media ID
-        response = await self._client.post(f'https://graph.facebook.com/{self._protocol_version}/{msg.sender_id}/media',
+        response = await self._client.post(f'{self._base_url}/{self._whastapp_id}/media',
                                            headers={'Authorization': f'Bearer {self._token}'},
                                            data={'type': msg.mime_type,
                                                  'messaging_product': 'whatsapp'},
@@ -53,10 +94,9 @@ class WhatsAppApplication:
         response.raise_for_status()
         msg.media_id = response.json().get('id')
         # Now we can send the image normally
-        return await self._send_generic_msg(msg)
+        return await self._send_generic_msg(msg, conversation)
 
-    @staticmethod
-    def parse_request(body: dict) -> list[TextMessage]:
+    def parse_request(self, body: dict) -> list[TextMessage]:
         """
         Parse a Webhook request containing new messages, returning the native Message data
 
@@ -81,7 +121,7 @@ class WhatsAppApplication:
             raise ValueError(ERROR_MSG_MALFORMED)
 
         # The list that will contain the message objects
-        messages = []
+        updates = []
 
         for entry in body['entry']:
             # Here we have a list of entries; for each entry the `id` field contains the WhatsApp
@@ -92,7 +132,6 @@ class WhatsAppApplication:
                 raise ValueError(ERROR_MSG_MALFORMED)
 
             for change in entry.get('changes', []):
-                contacts = {}
                 if 'field' not in change or change.get('field') != 'messages':
                     raise ValueError('Cannot parse unknown message format')
                 changes = change.get('value', {})
@@ -112,30 +151,59 @@ class WhatsAppApplication:
                 if 'contacts' not in changes:
                     raise ValueError(ERROR_MSG_MALFORMED)
                 for contact in changes.get('contacts', []):
-                    # Store the user names for the WhatsApp IDs that are provided
+                    # Store the contacts for the WhatsApp IDs that are provided
                     # These should match values in the messages -> from field
                     if 'profile' not in contact or 'name' not in contact.get('profile'):
                         raise ValueError(ERROR_MSG_MALFORMED)
-                    # Add the contact to the list of contacts
-                    contacts[contact['wa_id']] = contact['profile']['name']
+                    # Continuously update the contact information based on the information we get
+                    if contact['wa_id'] in self._contacts:
+                        self._contacts[contact['wa_id']].name = contact['profile']['name']
+                    else:
+                        self._contacts[contact['wa_id']] = Contact(whatsapp_id=contact['wa_id'],
+                                                                   name=contact['profile']['name'])
                 if 'messages' not in changes:
                     raise ValueError(ERROR_MSG_MALFORMED)
                 for msg in changes.get('messages', []):
+                    sender_id = msg.get('from', '__INVALID__')
+                    sender = self._contacts.get(sender_id)
+                    if sender is None:
+                        logging.error(f'Cannot find sender id {sender_id} for update in list of contacts, skipping')
+                        continue
+                    conversation = self.get_conversations({sender})
                     match msg.get('type'):
                         case 'text':
-                            messages.append(TextMessage(msg_id=msg.get('id', '__INVALID__'),
-                                                        sender_id=msg.get('from', '__INVALID__'),
-                                                        sender=contacts.get(msg.get('from', '__INVALID__'),
-                                                                            '__INVALID__'),
-                                                        recipient=recipient,
-                                                        recipient_id=recipient_id,
-                                                        date=datetime.fromtimestamp(
-                                                            WhatsAppApplication._parseint(msg.get('timestamp', 0))),
-                                                        text=msg.get('text', {'body': '__INVALID__'}).get('body')))
+                            updates.append(Update(sender=sender,
+                                                  instant=datetime.fromtimestamp(
+                                                      WhatsAppApplication._parseint(msg.get('timestamp', 0))),
+                                                  conversation=conversation,
+                                                  msg=TextMessage(msg_id=msg.get('id', '__INVALID__'),
+                                                                  sender_id=msg.get('from', '__INVALID__'),
+                                                                  sender=self._contacts.get(
+                                                                      msg.get('from', '__INVALID__'),
+                                                                      '__INVALID__'),
+                                                                  recipient=recipient,
+                                                                  recipient_id=recipient_id,
+                                                                  date=datetime.fromtimestamp(
+                                                                      WhatsAppApplication._parseint(
+                                                                          msg.get('timestamp', 0))),
+                                                                  text=msg.get('text', {'body': '__INVALID__'}).get(
+                                                                      'body'))))
                         case _:
                             raise NotImplementedError(f'Cannot parse message of type "{msg.get("type")}"')
 
-        return messages
+        return updates
+
+    def get_conversations(self, contacts: set[Contact]):
+        """
+        Get the conversations currently in place with the provided contacts
+
+        The conversations with the given contacts will be registered internally, if it does not exist
+        """
+        conversation = Conversation(contacts | {self.contact})
+        if conversation.frozen_participants not in self._conversations:
+            self._conversations[conversation.frozen_participants] = conversation
+
+        return conversation
 
     @staticmethod
     def handle_subscription(event: dict, whatsapp_verify_token: str):

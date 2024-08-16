@@ -1,19 +1,34 @@
 import json
 import mimetypes
+from enum import Enum
 from datetime import datetime
+from whatsapp.contact import Contact
 from dataclasses import dataclass, field
 
 
-@dataclass
+class Status(Enum):
+    """
+    Enum for holding message status values
+    """
+    UNKNOWN = 0
+    SENT = 1
+    READ = 2
+
+
+@dataclass(kw_only=True)
 class BaseMessage:
+    """
+    Base class for all messages supported by this package
+    """
     sender_id: str
     recipient_id: str
+    status = Status.UNKNOWN
 
-    def serialize(self) -> dict[str: str | int]:
+    def serialize(self, recipient: Contact) -> dict[str: str | int]:
         raise NotImplementedError('This method must be implemented by derived classes')
 
 
-@dataclass
+@dataclass(kw_only=True)
 class TextMessage(BaseMessage):
     text: str
     date: datetime = field(default_factory=datetime.now)
@@ -22,7 +37,7 @@ class TextMessage(BaseMessage):
     sender: str = ''
     preview_links: bool = True
 
-    def serialize(self) -> dict[str: str | int]:
+    def serialize(self, recipient: Contact) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
@@ -30,13 +45,13 @@ class TextMessage(BaseMessage):
         """
         return {'messaging_product': 'whatsapp',
                 'recipient_type': 'individual',
-                'to': self.recipient_id,
+                'to': recipient.whatsapp_id,
                 'type': 'text',
                 'text': json.dumps({'preview_url': self.preview_links,
                                     'body': self.text})}
 
 
-@dataclass
+@dataclass(kw_only=True)
 class MediaMessage(BaseMessage):
     media: bytes
     media_name: str
@@ -51,7 +66,7 @@ class MediaMessage(BaseMessage):
             self.mime_type = mimetypes.guess_type(self.media_name)[0]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ImageMessage(MediaMessage):
     caption: str = ''
     date: datetime = field(default_factory=datetime.now)
@@ -59,7 +74,7 @@ class ImageMessage(MediaMessage):
     recipient: str = ''
     sender: str = ''
 
-    def serialize(self) -> dict[str: str | int]:
+    def serialize(self, recipient: Contact) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
@@ -79,20 +94,20 @@ class ImageMessage(MediaMessage):
 
         return {'messaging_product': 'whatsapp',
                 'recipient_type': 'individual',
-                'to': self.recipient_id,
+                'to': recipient.whatsapp_id,
                 'type': 'image',
                 'image': {'id': self.media_id,
                           'caption': self.caption}}
 
 
-@dataclass
+@dataclass(kw_only=True)
 class LocationMessage(BaseMessage):
     latitude: float
     longitude: float
     name: str
     address: str
 
-    def serialize(self) -> dict[str: str | int]:
+    def serialize(self, recipient: Contact) -> dict[str: str | int]:
         """
         Serialize the message into a dictionary that can be sent using the Meta API
 
@@ -100,7 +115,7 @@ class LocationMessage(BaseMessage):
         """
         return {'messaging_product': 'whatsapp',
                 'recipient_type': 'individual',
-                'to': self.recipient_id,
+                'to': recipient.whatsapp_id,
                 'type': 'location',
                 'location': {'latitude': self.latitude,
                              'longitude': self.longitude,

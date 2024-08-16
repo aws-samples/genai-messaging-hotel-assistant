@@ -3,12 +3,12 @@ import json
 import boto3
 import httpx
 import asyncio
-import logging
 from whatsapp.application import WhatsAppApplication
 from conversation.handler import start_new_conversation, respond_with_agent
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
+WHATSAPP_ID = os.environ.get('WHATSAPP_ID', '__INVALID__')
 WHATSAPP_API_KEY = sm.get_secret_value(SecretId=os.environ.get('SECRET_NAME')).get('SecretString', '__INVALID__')
 WHATSAPP_API_VERIFY_TOKEN = sm.get_secret_value(SecretId=os.environ.get('WHATSAPP_VERIFY_TOKEN_NAME')).get(
     'SecretString', '__INVALID__')
@@ -16,7 +16,7 @@ WHATSAPP_API_VERIFY_TOKEN = sm.get_secret_value(SecretId=os.environ.get('WHATSAP
 
 async def main(event):
     async with httpx.AsyncClient() as client:
-        wa = WhatsAppApplication(whatsapp_token=WHATSAPP_API_KEY, client=client)
+        wa = WhatsAppApplication(whatsapp_token=WHATSAPP_API_KEY, whatsapp_id=WHATSAPP_ID, client=client)
         # Handle the different cases
         match event['requestContext']['httpMethod']:
             case 'GET':

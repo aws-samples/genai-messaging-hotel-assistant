@@ -22,9 +22,14 @@ class HotelAssistantStack(Stack):
                                         type='String',
                                         description='The WhatsApp API key',
                                         no_echo=True)
+        whatsapp_id = CfnParameter(self, 'WhatsaAppPhoneID',
+                                   type='String',
+                                   description='The WhatsApp Phone ID for the bot to use',
+                                   no_echo=True)
         backend = MessagingBackend(scope=self,
                                    construct_id='HotelAgentBackend',
                                    agent=kb_stack.agent,
                                    agent_alias=kb_stack.agent_alias,
                                    telegram_api_key=telegram_api_key,
-                                   whatsapp_api_key=whatsapp_api_key)
+                                   whatsapp_api_key=whatsapp_api_key,
+                                   whatsapp_id=whatsapp_id)

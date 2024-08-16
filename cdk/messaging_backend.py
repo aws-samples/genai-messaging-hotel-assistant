@@ -22,6 +22,7 @@ class MessagingBackend(Construct):
                  agent_alias: bedrock.CfnAgentAlias,
                  telegram_api_key: CfnParameter,
                  whatsapp_api_key: CfnParameter,
+                 whatsapp_id: CfnParameter,
                  telegram_backend_lamda_dir: Path = Path('lambda') / 'telegram_api',
                  whatsapp_backend_lamda_dir: Path = Path('lambda') / 'whatsapp_api',
                  webhook_registration_lamda_dir: Path = Path('lambda') / 'set_webhook',
@@ -37,7 +38,8 @@ class MessagingBackend(Construct):
         agent: Bedrock Agent that will be invoked by this backend
         agent_alias: Bedrock Agent Alias to use
         telegram_api_key : API key to use for the Telegram client to be able to send messages
-        whatsapp_api_key : Temporary of permanent API key for communicating with the WhatsApp servers
+        whatsapp_api_key : Temporary or permanent API key for communicating with the WhatsApp servers
+        whatsapp_id : WhatsApp phone number ID for the bot to use for sending messages
         telegram_backend_lamda_dir : Path to the directory containing the source code for the
                                      Lambda backend for Telegram communications
         whatsapp_backend_lamda_dir : Path to the directory containing the source code for the
@@ -121,6 +123,7 @@ class MessagingBackend(Construct):
                                                            code=image,
                                                            architecture=lambda_architecture,
                                                            environment={'WHATSAPP_VERIFY_TOKEN_NAME': whatsapp_verify_token_secret.secret_name,
+                                                                        'WHATSAPP_ID': whatsapp_id.value_as_string,
                                                                         'AGENT_ID': agent.attr_agent_id,
                                                                         'AGENT_ALIAS_ID': agent_alias.attr_agent_alias_id,
                                                                         'SECRET_NAME': whatsapp_secret.secret_name},
