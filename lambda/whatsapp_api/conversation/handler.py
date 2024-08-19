@@ -2,6 +2,7 @@ import logging
 from datetime import date
 from bookings.guests import MemberType
 from botocore.exceptions import ClientError
+from whatsapp.conversation import Conversation
 from whatsapp.application import WhatsAppApplication
 from . import agents_runtime, AGENT_ID, AGENT_ALIAS_ID
 from bookings.sample import get_reservations_by_chat_id
@@ -9,26 +10,24 @@ from whatsapp.message import ImageMessage, LocationMessage, TextMessage
 
 
 async def start_new_conversation(app: WhatsAppApplication,
-                                 sender_id: str,
-                                 recipient_id: str,
-                                 recipient_name: str) -> None:
+                                 conversation: Conversation) -> None:
     """
     Introduce ourselves and present reservation info on new conversation request message.
     """
     # Invalidate any previous Bedrock Agents session
+    agent_session_id = '_'.join(sorted([f'{p.whatsapp_id}' for p in conversation.participants]))
     agents_runtime.invoke_agent(agentId=AGENT_ID,
                                 agentAliasId=AGENT_ALIAS_ID,
-                                sessionId=f'{recipient_id}',
+                                sessionId=agent_session_id,
                                 inputText='Hi',
                                 endSession=True)
     # Get the ID of the user who sent the message
-    user_reservations = get_reservations_by_chat_id(recipient_id,
-                                                    fallback_name=recipient_name)
+    recipient = (conversation.participants - {app.contact}).pop()
+    user_reservations = get_reservations_by_chat_id(recipient.whatsapp_id,
+                                                    fallback_name=recipient.name)
     if len(user_reservations) == 0:
-        await app.send_msg(TextMessage(sender_id=sender_id,
-                                       recipient_id=recipient_id,
-                                       text=f'Thanks for getting in touch with me, '
-                                            f'{recipient_name}. I cannot find any '
+        await app.send_msg(TextMessage(text=f'Thanks for getting in touch with me, '
+                                            f'{recipient.name}. I cannot find any '
                                             'reservations for you; you can book a room in our website.'))
         return
 
@@ -42,7 +41,7 @@ async def start_new_conversation(app: WhatsAppApplication,
     # Send basic reservation details
     minors = [g for g in reservation.guests if g.is_minor]
     adults = [g for g in reservation.guests if not g.is_minor]
-    msg += f'Here are the details of your reservation, {recipient_name}:\n'
+    msg += f'Here are the details of your reservation, {recipient.name}:\n'
     msg += f'  • {(reservation.end_date - reservation.start_date).days} nights\n'
     msg += (f'  • {len(adults)} adult{"s" if len(adults) > 1 else ""} '
             f'({", ".join([g.name for g in reservation.guests if not g.is_minor])})\n')
@@ -53,23 +52,20 @@ async def start_new_conversation(app: WhatsAppApplication,
             msg += f'  • {n} minors ({", ".join([g.name for g in reservation.guests if g.is_minor])})\n'
     # Send the main message
     if reservation.hotel.poster is None:
-        await app.send_msg(TextMessage(sender_id=sender_id,
-                                       recipient_id=recipient_id,
-                                       text=msg))
+        await app.send_msg(TextMessage(text=msg),
+                           conversation=conversation)
     else:
-        await app.send_msg(ImageMessage(sender_id=sender_id,
-                                        recipient_id=recipient_id,
-                                        media=reservation.hotel.poster,
+        await app.send_msg(ImageMessage(media=reservation.hotel.poster,
                                         media_name='poster.jpg',
-                                        caption=msg))
+                                        caption=msg),
+                           conversation=conversation)
 
     # Send the hotel location as a reply to the main message
-    await app.send_msg(LocationMessage(sender_id=sender_id,
-                                       recipient_id=recipient_id,
-                                       latitude=reservation.hotel.location.lat,
+    await app.send_msg(LocationMessage(latitude=reservation.hotel.location.lat,
                                        longitude=reservation.hotel.location.lon,
                                        name=f'{reservation.hotel.name} location',
-                                       address=reservation.hotel.location.address))
+                                       address=reservation.hotel.location.address),
+                           conversation=conversation)
 
     # If the user is a gold member or above, also send the room key and a welcome message
     if len([g for g in reservation.guests if g.member_level >= MemberType.GOLD]) > 0:
@@ -80,24 +76,23 @@ async def start_new_conversation(app: WhatsAppApplication,
                f'meet you in the hotel lobby and solve any doubts you might have.')
 
         # Send the room key file to the customer
-        await app.send_msg(ImageMessage(sender_id=sender_id,
-                                        recipient_id=recipient_id,
-                                        media=reservation.digital_room_key,
+        await app.send_msg(ImageMessage(media=reservation.digital_room_key,
                                         media_name=f'Room {reservation.room_number}.png',
-                                        caption=msg))
+                                        caption=msg),
+                           conversation=conversation)
 
 
 async def respond_with_agent(msg: TextMessage,
                              app: WhatsAppApplication,
-                             sender_id: str,
-                             recipient_id: str) -> None:
+                             conversation: Conversation) -> None:
     """
     Process a normal user message using the given Bedrock Agent
     """
+    agent_session_id = '_'.join(sorted([f'{p.whatsapp_id}' for p in conversation.participants]))
     for _ in range(2):
         response = agents_runtime.invoke_agent(agentId=AGENT_ID,
                                                agentAliasId=AGENT_ALIAS_ID,
-                                               sessionId=f'{recipient_id}',
+                                               sessionId=agent_session_id,
                                                inputText=msg.text)
         completion = ''
         try:
@@ -106,33 +101,28 @@ async def respond_with_agent(msg: TextMessage,
                 completion = completion + chunk['bytes'].decode()
 
             if len(completion) == 0:
-                await app.send_msg(TextMessage(sender_id=sender_id,
-                                               recipient_id=recipient_id,
-                                               text='Let me think...',
-                                               preview_links=False))
+                await app.send_msg(TextMessage(text='Let me think...',
+                                               preview_links=False),
+                                   conversation=conversation)
                 continue
         except ClientError as e:
             logging.exception(e)
-            await app.send_msg(TextMessage(sender_id=sender_id,
-                                           recipient_id=recipient_id,
-                                           text='Let me think...',
-                                           preview_links=False))
+            await app.send_msg(TextMessage(text='Let me think...',
+                                           preview_links=False),
+                               conversation=conversation)
             continue
         except KeyError as e:
             logging.exception(e)
-            await app.send_msg(TextMessage(sender_id=sender_id,
-                                           recipient_id=recipient_id,
-                                           text='Let me think...',
-                                           preview_links=False))
+            await app.send_msg(TextMessage(text='Let me think...',
+                                           preview_links=False),
+                               conversation=conversation)
             continue
-        await app.send_msg(TextMessage(sender_id=sender_id,
-                                       recipient_id=recipient_id,
-                                       text=completion,
-                                       preview_links=True))
+        await app.send_msg(TextMessage(text=completion,
+                                       preview_links=True),
+                           conversation=conversation)
         return
 
-    await app.send_msg(TextMessage(sender_id=sender_id,
-                                   recipient_id=recipient_id,
-                                   text="I'm sorry, I cannot find that information. You can find out more "
+    await app.send_msg(TextMessage(text="I'm sorry, I cannot find that information. You can find out more "
                                         "about this in the hotel reception.",
-                                   preview_links=True))
+                                   preview_links=True),
+                       conversation=conversation)

@@ -20,8 +20,6 @@ class BaseMessage:
     """
     Base class for all messages supported by this package
     """
-    sender_id: str
-    recipient_id: str
     status = Status.UNKNOWN
 
     def serialize(self, recipient: Contact) -> dict[str: str | int]:
@@ -33,8 +31,6 @@ class TextMessage(BaseMessage):
     text: str
     date: datetime = field(default_factory=datetime.now)
     msg_id: str = ''
-    recipient: str = ''
-    sender: str = ''
     preview_links: bool = True
 
     def serialize(self, recipient: Contact) -> dict[str: str | int]:

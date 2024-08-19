@@ -126,7 +126,7 @@ class MessagingBackend(Construct):
                                                                         'WHATSAPP_ID': whatsapp_id.value_as_string,
                                                                         'AGENT_ID': agent.attr_agent_id,
                                                                         'AGENT_ALIAS_ID': agent_alias.attr_agent_alias_id,
-                                                                        'SECRET_NAME': whatsapp_secret.secret_name},
+                                                                        'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name},
                                                            timeout=aws_cdk.Duration.seconds(30),
                                                            role=whatsapp_lambda_role)
         self.whatsapp_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))

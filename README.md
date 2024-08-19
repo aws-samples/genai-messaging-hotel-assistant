@@ -109,11 +109,11 @@ request to the endpoint provided by `cdk` as an output (search for `HotelAssista
 
 ```bash
 curl -X POST "${API_ENDPOINT}/whatsapp" \
-     -d '{ "object":"new_conversation_request", "recipient_id":"${RECIPIENT_WHATSAPP_ID}", "sender_id":"${APPLICATION_PHONE_NUMBER_ID}", "recipient_name":"${RECIPIENT_NAME}"}'
+     -d '{ "object":"new_conversation_request", "recipient_id":"${RECIPIENT_WHATSAPP_ID}", "recipient_name":"${RECIPIENT_NAME}"}'
 
 # Example
 # curl -X POST "https://aaaaaaaaaa.execute-api.us-west-2.amazonaws.com/prod/whatsapp" \
-#      -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "sender_id":"338822111111111", "recipient_name":"Joseba"}'
+#      -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "recipient_name":"Joseba"}'
 ```
 
 # References

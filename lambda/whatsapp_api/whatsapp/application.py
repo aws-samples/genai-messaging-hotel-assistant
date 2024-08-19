@@ -96,7 +96,7 @@ class WhatsAppApplication:
         # Now we can send the image normally
         return await self._send_generic_msg(msg, conversation)
 
-    def parse_request(self, body: dict) -> list[TextMessage]:
+    def parse_request(self, body: dict) -> list[Update]:
         """
         Parse a Webhook request containing new messages, returning the native Message data
 
@@ -177,17 +177,11 @@ class WhatsAppApplication:
                                                       WhatsAppApplication._parseint(msg.get('timestamp', 0))),
                                                   conversation=conversation,
                                                   msg=TextMessage(msg_id=msg.get('id', '__INVALID__'),
-                                                                  sender_id=msg.get('from', '__INVALID__'),
-                                                                  sender=self._contacts.get(
-                                                                      msg.get('from', '__INVALID__'),
-                                                                      '__INVALID__'),
-                                                                  recipient=recipient,
-                                                                  recipient_id=recipient_id,
                                                                   date=datetime.fromtimestamp(
                                                                       WhatsAppApplication._parseint(
                                                                           msg.get('timestamp', 0))),
                                                                   text=msg.get('text', {'body': '__INVALID__'}).get(
-                                                                      'body'))))
+                                                                      'body', ''))))
                         case _:
                             raise NotImplementedError(f'Cannot parse message of type "{msg.get("type")}"')
 
@@ -201,6 +195,7 @@ class WhatsAppApplication:
         """
         conversation = Conversation(contacts | {self.contact})
         if conversation.frozen_participants not in self._conversations:
+            logging.debug(f'Starting new conversation with {contacts}')
             self._conversations[conversation.frozen_participants] = conversation
 
         return conversation
