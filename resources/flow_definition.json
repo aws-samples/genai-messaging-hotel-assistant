@@ -1,0 +1,45 @@
+{
+  "connections": [
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "document",
+          "targetInput": "document"
+        }
+      },
+      "name": "FlowInputNodeFlowInputNode0ToFlowOutputNodeFlowOutputNode0",
+      "source": "FlowInputNode",
+      "target": "FlowOutputNode",
+      "type": "Data"
+    }
+  ],
+  "nodes": [
+    {
+      "configuration": {
+        "input": {}
+      },
+      "name": "FlowInputNode",
+      "outputs": [
+        {
+          "name": "document",
+          "type": "String"
+        }
+      ],
+      "type": "Input"
+    },
+    {
+      "configuration": {
+        "output": {}
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "document",
+          "type": "String"
+        }
+      ],
+      "name": "FlowOutputNode",
+      "type": "Output"
+    }
+  ]
+}
