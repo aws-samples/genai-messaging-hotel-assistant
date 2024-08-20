@@ -51,7 +51,7 @@ class AgentWithAOSSKB(Construct):
         # Default to current platform, useful since we'll compile the docker images
         if lambda_architecture is None or lambda_architecture is None:
             match platform.machine():
-                case 'amd64':
+                case 'arm64':
                     lambda_platform = aws_ecr_assets.Platform.LINUX_ARM64
                     lambda_architecture = lambda_.Architecture.ARM_64
                 case _:
