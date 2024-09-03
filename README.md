@@ -46,7 +46,7 @@ In the root folder of this repo, run:
 # Only run the following if running in Podman, skip it if you're using Docker
 export CDK_DOCKER=podman
 # Deploy providing the API key you got when creating the new Telegram & WhatsApp bots
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}" --parameters WhatsaAppPhoneID="{WHATSAPP_ID}"
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="{WHATSAPP_ID}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
 # You can now optionally get the WhatsAppAPIVerifyToken value as follows
 aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query SecretString
 ```

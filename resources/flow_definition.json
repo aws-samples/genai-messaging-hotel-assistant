@@ -2,14 +2,96 @@
   "connections": [
     {
       "configuration": {
+        "conditional": {
+          "condition": "default"
+        }
+      },
+      "name": "ConditionNode_1ConditionNodeHandleDefaultConditionNode_1ToPrompt_2Prompt_2HeaderHandle",
+      "source": "ConditionNode_1",
+      "target": "Prompt_2",
+      "type": "Conditional"
+    },
+    {
+      "configuration": {
+        "conditional": {
+          "condition": "Condition"
+        }
+      },
+      "name": "ConditionNode_1ConditionNodeHandle0ToKnowledgeBaseNode_1KnowledgeBaseNode_1HeaderHandle",
+      "source": "ConditionNode_1",
+      "target": "KnowledgeBaseNode_1",
+      "type": "Conditional"
+    },
+    {
+      "configuration": {
         "data": {
           "sourceOutput": "document",
+          "targetInput": "generic_question"
+        }
+      },
+      "name": "FlowInputNodeFlowInputNode0ToPrompt_2PromptsNode0",
+      "source": "FlowInputNode",
+      "target": "Prompt_2",
+      "type": "Data"
+    },
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "modelCompletion",
           "targetInput": "document"
         }
       },
-      "name": "FlowInputNodeFlowInputNode0ToFlowOutputNodeFlowOutputNode0",
+      "name": "Prompt_2PromptsNode0ToFlowOutputNode_2FlowOutputNode0",
+      "source": "Prompt_2",
+      "target": "FlowOutputNode_2",
+      "type": "Data"
+    },
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "modelCompletion",
+          "targetInput": "conditionInput"
+        }
+      },
+      "name": "Prompt_1PromptsNode0ToConditionNode_1ConditionNode0",
+      "source": "Prompt_1",
+      "target": "ConditionNode_1",
+      "type": "Data"
+    },
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "document",
+          "targetInput": "user_input"
+        }
+      },
+      "name": "FlowInputNodeFlowInputNode0ToPrompt_1PromptsNode0",
       "source": "FlowInputNode",
-      "target": "FlowOutputNode",
+      "target": "Prompt_1",
+      "type": "Data"
+    },
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "document",
+          "targetInput": "retrievalQuery"
+        }
+      },
+      "name": "FlowInputNodeFlowInputNode0ToKnowledgeBaseNode_1KnowledgeBaseNode0",
+      "source": "FlowInputNode",
+      "target": "KnowledgeBaseNode_1",
+      "type": "Data"
+    },
+    {
+      "configuration": {
+        "data": {
+          "sourceOutput": "outputText",
+          "targetInput": "document"
+        }
+      },
+      "name": "KnowledgeBaseNode_1KnowledgeBaseNode0ToFlowOutputNode_1FlowOutputNode0",
+      "source": "KnowledgeBaseNode_1",
+      "target": "FlowOutputNode_1",
       "type": "Data"
     }
   ],
@@ -38,8 +120,159 @@
           "type": "String"
         }
       ],
-      "name": "FlowOutputNode",
+      "name": "FlowOutputNode_1",
       "type": "Output"
+    },
+    {
+      "configuration": {
+        "prompt": {
+          "sourceConfiguration": {
+            "inline": {
+              "inferenceConfiguration": {
+                "text": {
+                  "maxTokens": 1000,
+                  "temperature": 0.5,
+                  "topK": 50,
+                  "topP": 0.5
+                }
+              },
+              "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
+              "templateConfiguration": {
+                "text": {
+                  "inputVariables": [
+                    {
+                      "name": "user_input"
+                    }
+                  ],
+                  "text": "You take the users' questions and categorize in any one of the following: \"spa_services\" if user's quesiton is around spa services,\"generic\" if user's question is anything else. Provide only one category type as an answer {{user_input}}"
+                }
+              },
+              "templateType": "TEXT"
+            }
+          }
+        }
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "user_input",
+          "type": "String"
+        }
+      ],
+      "name": "Prompt_1",
+      "outputs": [
+        {
+          "name": "modelCompletion",
+          "type": "String"
+        }
+      ],
+      "type": "Prompt"
+    },
+    {
+      "configuration": {
+        "condition": {
+          "conditions": [
+            {
+              "expression": "conditionInput == \"spa_services\"",
+              "name": "Condition"
+            },
+            {
+              "name": "default"
+            }
+          ]
+        }
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "conditionInput",
+          "type": "String"
+        }
+      ],
+      "name": "ConditionNode_1",
+      "type": "Condition"
+    },
+    {
+      "configuration": {
+        "prompt": {
+          "sourceConfiguration": {
+            "inline": {
+              "inferenceConfiguration": {
+                "text": {
+                  "maxTokens": 1000,
+                  "temperature": 0.5,
+                  "topK": 50,
+                  "topP": 0.5
+                }
+              },
+              "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
+              "templateConfiguration": {
+                "text": {
+                  "inputVariables": [
+                    {
+                      "name": "generic_question"
+                    }
+                  ],
+                  "text": "Answer user's questions in single sentence {{generic_question}}"
+                }
+              },
+              "templateType": "TEXT"
+            }
+          }
+        }
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "generic_question",
+          "type": "String"
+        }
+      ],
+      "name": "Prompt_2",
+      "outputs": [
+        {
+          "name": "modelCompletion",
+          "type": "String"
+        }
+      ],
+      "type": "Prompt"
+    },
+    {
+      "configuration": {
+        "output": {}
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "document",
+          "type": "String"
+        }
+      ],
+      "name": "FlowOutputNode_2",
+      "type": "Output"
+    },
+    {
+      "configuration": {
+        "knowledgeBase": {
+          "knowledgeBaseId": "${knowledge_base_id}",
+          "modelId": "anthropic.claude-3-haiku-20240307-v1:0"
+        }
+      },
+      "inputs": [
+        {
+          "expression": "$.data",
+          "name": "retrievalQuery",
+          "type": "String"
+        }
+      ],
+      "name": "KnowledgeBaseNode_1",
+      "outputs": [
+        {
+          "name": "outputText",
+          "type": "String"
+        }
+      ],
+      "type": "KnowledgeBase"
     }
   ]
 }

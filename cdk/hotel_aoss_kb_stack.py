@@ -14,6 +14,7 @@ from aws_cdk import (CustomResource,
                      aws_s3_deployment as s3_deployment,
                      aws_s3_notifications as s3n,
                      custom_resources)
+from .utils import get_flow_definition
 
 
 class AgentWithAOSSKB(Construct):
@@ -23,10 +24,10 @@ class AgentWithAOSSKB(Construct):
                  bucket_deployment_dir: Path = Path('docs'),
                  agent_model_id: str = 'anthropic.claude-3-haiku-20240307-v1:0',
                  agent_alias_name: str = 'v1',
-                 embeddings_model_id: str = 'cohere.embed-multilingual-v3',
+                 embeddings_model_id: str = 'amazon.titan-embed-text-v2:0',
                  ambeddings_vector_size: int = 1024,
-                 agent_instructions: str = 'You are a comedian tasked with telling '
-                                           'bad jokes regardless of user input',
+                 agent_instructions: str = 'You are a helpful hotel assistant',
+                 flow_definition: Path = Path('resources/flow_definition.json'),
                  lambda_platform: aws_ecr_assets.Platform | None = None,
                  lambda_architecture: lambda_.Architecture | None = None):
         """
@@ -43,6 +44,7 @@ class AgentWithAOSSKB(Construct):
                          (https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html)
         ambeddings_vector_size : Dimension of the embeddings vector, depends on the embeddings model used
         agent_instructions : Base instructions for the agent
+        flow_definition : Path for the JSON file with the flow definition.
         lambda_platform : Compute platform to use for Lambdas, will try to use the native machine architecture
         lambda_architecture : Architecture of the Lambdas, will try to use the native machine architecture
         """
@@ -65,9 +67,10 @@ class AgentWithAOSSKB(Construct):
         # The name for this role is a requirement for Bedrock
         agent_role = iam.Role(scope=self,
                               id='AgentRole',
-                              role_name='AmazonBedrockExecutionRoleForAgents-HotelGenAI',
+                              role_name='AmazonBedrockExecutionRoleForAgents_HotelGenAI',
                               assumed_by=iam.ServicePrincipal('bedrock.amazonaws.com'))
-        base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
+        base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
+            managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         index_lambda_role = iam.Role(scope=self,
                                      id='IndexCreatorLambdaRole',
                                      assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -76,6 +79,10 @@ class AgentWithAOSSKB(Construct):
                                   id='KBSyncLambdaRole',
                                   assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
                                   managed_policies=[base_lambda_policy])
+        flow_role = iam.Role(scope=self,
+                             id='PromptFlowRole',
+                             role_name='AmazonBedrockExecutionRoleForFlows_HotelGenAI',
+                             assumed_by=iam.ServicePrincipal('bedrock.amazonaws.com'))
         # S3 bucket that will be used for our storage needs
         self.bucket = s3.Bucket(scope=self,
                                 id='AgentKBDocsBucket',
@@ -148,10 +155,14 @@ class AgentWithAOSSKB(Construct):
         index_creator.node.add_dependency(self.collection)
 
         # Bedrock
-        model_arn = bedrock.FoundationModel.from_foundation_model_id(
+        embeddings_model_arn = bedrock.FoundationModel.from_foundation_model_id(
             scope=self,
             _id='EmbeddingsModel',
             foundation_model_id=bedrock.FoundationModelIdentifier(embeddings_model_id)).model_arn
+        text_model_arn = bedrock.FoundationModel.from_foundation_model_id(
+            scope=self,
+            _id='TextModel',
+            foundation_model_id=bedrock.FoundationModelIdentifier(agent_model_id)).model_arn
         # Create the rolw that the Bedrock Agent will use
         self.bucket.grant_read(kb_role)
         kb_role.add_to_policy(iam.PolicyStatement(sid='OpenSearchServerlessAPIAccessAllStatement',
@@ -160,7 +171,7 @@ class AgentWithAOSSKB(Construct):
                                                   actions=['aoss:APIAccessAll']))
         kb_role.add_to_policy(iam.PolicyStatement(sid='BedrockInvokeModelStatement',
                                                   effect=iam.Effect.ALLOW,
-                                                  resources=[model_arn],
+                                                  resources=[embeddings_model_arn],
                                                   actions=['bedrock:InvokeModel']))
 
         # Opensearch data access policy
@@ -201,7 +212,7 @@ class AgentWithAOSSKB(Construct):
                                                        role_arn=kb_role.role_arn,
                                                        knowledge_base_configuration={'type': 'VECTOR',
                                                                                      'vectorKnowledgeBaseConfiguration': {
-                                                                                         'embeddingModelArn': model_arn}},
+                                                                                         'embeddingModelArn': embeddings_model_arn}},
                                                        storage_configuration={'type': 'OPENSEARCH_SERVERLESS',
                                                                               'opensearchServerlessConfiguration': {
                                                                                   'collectionArn': self.collection.attr_arn,
@@ -263,7 +274,7 @@ class AgentWithAOSSKB(Construct):
                                                      actions=['bedrock:Retrieve']))
         self.agent = bedrock.CfnAgent(scope=self,
                                       id='GenAIAgent',
-                                      agent_name='genai-agent',
+                                      agent_name='genai-assistant-agent',
                                       instruction=agent_instructions,
                                       agent_resource_role_arn=agent_role.role_arn,
                                       foundation_model=agent_model_id,
@@ -273,6 +284,43 @@ class AgentWithAOSSKB(Construct):
                                                  id='GenAIAgentAlias',
                                                  agent_alias_name=agent_alias_name,
                                                  agent_id=self.agent.attr_agent_id)
+
+        # Create the Bedrock Prompt Flow & grant it the appropriate IAM permissions
+        self.flow = bedrock.CfnFlow(scope=self,
+                                    id='GenAIPromptFlow',
+                                    execution_role_arn=flow_role.role_arn,
+                                    name='genai-assistant-prompt-flow',
+                                    definition=get_flow_definition(knowledge_base_id=self.knowledge_base.attr_knowledge_base_id,
+                                                                   definition_file=flow_definition))
+        self.flow_version = bedrock.CfnFlowVersion(scope=self,
+                                                   id='GenAIPromptFlowVersion',
+                                                   flow_arn=self.flow.attr_arn)
+        routing = [bedrock.CfnFlowAlias.FlowAliasRoutingConfigurationListItemProperty(flow_version=self.flow_version.attr_version)]
+        self.flow_alias = bedrock.CfnFlowAlias(scope=self,
+                                               flow_arn=self.flow.attr_arn,
+                                               name='HotelGenAI-Production',
+                                               id='GenAIPromptFlowAlias',
+                                               routing_configuration=routing)
+        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowsGetFlowPolicyHotelGenAI',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[self.flow.attr_arn],
+                                                    actions=['bedrock:GetFlow']))
+        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowsInvokeAgentPolicyHotelGenAI',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[self.agent.attr_agent_arn],
+                                                    actions=['bedrock:InvokeAgent']))
+        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowsInvokeAgentPolicyHotelGenAI',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[self.agent.attr_agent_arn],
+                                                    actions=['bedrock:InvokeAgent']))
+        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowRetrieveKnowledgeBasePolicyHotelGenAI',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[self.knowledge_base.attr_knowledge_base_arn],
+                                                    actions=['bedrock:Retrieve', 'bedrock:RetrieveAndGenerate']))
+        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowsInvokeFoundationModelPolicyHotelGenAI',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[text_model_arn],
+                                                    actions=['bedrock:InvokeModel']))
 
         # Declare the stack outputs
         aws_cdk.CfnOutput(scope=self, id='collection_id', value=self.collection.logical_id)
