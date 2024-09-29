@@ -51,7 +51,7 @@ class Reservations(Construct):
         base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
             managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         spa_lambda_role = iam.Role(scope=self,
-                                   id='BackendTelegramLambdaRole',
+                                   id='SpaReservationsLambdaRole',
                                    assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
                                    managed_policies=[base_lambda_policy])
         # Telegram API-related resources
@@ -71,5 +71,10 @@ class Reservations(Construct):
         # Register the lambda for GET & POST with the rest API
         spa_api = rest_api.root.add_resource('spa',
                                              default_integration=api_gw.LambdaIntegration(self.spa_lambda))
-        spa_api.add_method('GET')
+        spa_api.add_method('GET',
+                           request_parameters={'method.request.querystring.date': True},
+                           request_validator=api_gw.RequestValidator(scope=self,
+                                                                     id='SpaReservationsValiaator',
+                                                                     rest_api=rest_api,
+                                                                     validate_request_parameters=True))
         spa_api.add_method('POST')

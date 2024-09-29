@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Run the main script
-CMD [ "lambda_function.handler" ]
+CMD [ "lambda_function.handle_event" ]
