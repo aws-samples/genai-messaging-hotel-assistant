@@ -214,7 +214,7 @@ class WhatsAppApplication:
                                   You should provide this in the Meta Application pannel
                                   when creating your app.
         """
-        match event['hub.mode']:
+        match event.get('hub.mode', ''):
             case 'subscribe':
                 verify_token = event['hub.verify_token']
                 if verify_token == whatsapp_verify_token:

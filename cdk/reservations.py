@@ -13,7 +13,7 @@ class Reservations(Construct):
     def __init__(self,
                  scope: Construct,
                  construct_id: str,
-                 rest_api:  api_gw.RestApi,
+                 rest_api: api_gw.RestApi,
                  reservations_lambda_dir: Path = Path('lambda') / 'reservations',
                  lambda_platform: aws_ecr_assets.Platform | None = None,
                  lambda_architecture: lambda_.Architecture | None = None):
