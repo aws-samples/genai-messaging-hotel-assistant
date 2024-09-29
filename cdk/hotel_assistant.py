@@ -1,6 +1,7 @@
 from pathlib import Path
 from constructs import Construct
 from aws_cdk import CfnParameter, Stack
+from cdk.reservations import Reservations
 from cdk.messaging_backend import MessagingBackend
 from cdk.hotel_aoss_kb_stack import AgentWithAOSSKB
 
@@ -33,4 +34,8 @@ class HotelAssistantStack(Stack):
                                    agent_alias=kb_stack.agent_alias,
                                    telegram_api_key=telegram_api_key,
                                    whatsapp_api_key=whatsapp_api_key,
-                                   whatsapp_id=whatsapp_id,)
+                                   whatsapp_id=whatsapp_id)
+        # Create the resources for handling the reservations API
+        reservations_stack = Reservations(scope=self,
+                                          construct_id='HotelAgentReservations',
+                                          rest_api=backend.api)
