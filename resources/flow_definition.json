@@ -1,278 +1,364 @@
 {
-  "connections": [
-    {
-      "configuration": {
-        "conditional": {
-          "condition": "default"
-        }
-      },
-      "name": "ConditionNode_1ConditionNodeHandleDefaultConditionNode_1ToPrompt_2Prompt_2HeaderHandle",
-      "source": "ConditionNode_1",
-      "target": "Prompt_2",
-      "type": "Conditional"
-    },
-    {
-      "configuration": {
-        "conditional": {
-          "condition": "Condition"
-        }
-      },
-      "name": "ConditionNode_1ConditionNodeHandle0ToKnowledgeBaseNode_1KnowledgeBaseNode_1HeaderHandle",
-      "source": "ConditionNode_1",
-      "target": "KnowledgeBaseNode_1",
-      "type": "Conditional"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "document",
-          "targetInput": "generic_question"
-        }
-      },
-      "name": "FlowInputNodeFlowInputNode0ToPrompt_2PromptsNode0",
-      "source": "FlowInputNode",
-      "target": "Prompt_2",
-      "type": "Data"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "modelCompletion",
-          "targetInput": "document"
-        }
-      },
-      "name": "Prompt_2PromptsNode0ToFlowOutputNode_2FlowOutputNode0",
-      "source": "Prompt_2",
-      "target": "FlowOutputNode_2",
-      "type": "Data"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "modelCompletion",
-          "targetInput": "conditionInput"
-        }
-      },
-      "name": "Prompt_1PromptsNode0ToConditionNode_1ConditionNode0",
-      "source": "Prompt_1",
-      "target": "ConditionNode_1",
-      "type": "Data"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "document",
-          "targetInput": "user_input"
-        }
-      },
-      "name": "FlowInputNodeFlowInputNode0ToPrompt_1PromptsNode0",
-      "source": "FlowInputNode",
-      "target": "Prompt_1",
-      "type": "Data"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "document",
-          "targetInput": "retrievalQuery"
-        }
-      },
-      "name": "FlowInputNodeFlowInputNode0ToKnowledgeBaseNode_1KnowledgeBaseNode0",
-      "source": "FlowInputNode",
-      "target": "KnowledgeBaseNode_1",
-      "type": "Data"
-    },
-    {
-      "configuration": {
-        "data": {
-          "sourceOutput": "outputText",
-          "targetInput": "document"
-        }
-      },
-      "name": "KnowledgeBaseNode_1KnowledgeBaseNode0ToFlowOutputNode_1FlowOutputNode0",
-      "source": "KnowledgeBaseNode_1",
-      "target": "FlowOutputNode_1",
-      "type": "Data"
-    }
-  ],
-  "nodes": [
-    {
-      "configuration": {
-        "input": {}
-      },
-      "name": "FlowInputNode",
-      "outputs": [
-        {
-          "name": "document",
-          "type": "String"
-        }
-      ],
-      "type": "Input"
-    },
-    {
-      "configuration": {
-        "output": {}
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "document",
-          "type": "String"
-        }
-      ],
-      "name": "FlowOutputNode_1",
-      "type": "Output"
-    },
-    {
-      "configuration": {
-        "prompt": {
-          "sourceConfiguration": {
-            "inline": {
-              "inferenceConfiguration": {
-                "text": {
-                  "maxTokens": 1000,
-                  "temperature": 0.5,
-                  "topK": 50,
-                  "topP": 0.5
-                }
-              },
-              "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
-              "templateConfiguration": {
-                "text": {
-                  "inputVariables": [
-                    {
-                      "name": "user_input"
-                    }
-                  ],
-                  "text": "You take the users' questions and categorize in any one of the following: \"spa_services\" if user's quesiton is around spa services,\"generic\" if user's question is anything else. Provide only one category type as an answer {{user_input}}"
-                }
-              },
-              "templateType": "TEXT"
-            }
-          }
-        }
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "user_input",
-          "type": "String"
-        }
-      ],
-      "name": "Prompt_1",
-      "outputs": [
-        {
-          "name": "modelCompletion",
-          "type": "String"
-        }
-      ],
-      "type": "Prompt"
-    },
-    {
-      "configuration": {
-        "condition": {
-          "conditions": [
+    "arn": "arn:aws:bedrock:us-east-1:954098368777:flow/AM7YU8RNXH",
+    "createdAt": "2024-09-03T08:38:01.203665+00:00",
+    "definition": {
+        "connections": [
             {
-              "expression": "conditionInput == \"spa_services\"",
-              "name": "Condition"
+                "configuration": {
+                    "conditional": {
+                        "condition": "default"
+                    }
+                },
+                "name": "message_routerConditionNodeHandleDefaultmessage_routerToPrompt_2Prompt_2HeaderHandle",
+                "source": "message_router",
+                "target": "Prompt_2",
+                "type": "Conditional"
             },
             {
-              "name": "default"
-            }
-          ]
-        }
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "conditionInput",
-          "type": "String"
-        }
-      ],
-      "name": "ConditionNode_1",
-      "type": "Condition"
-    },
-    {
-      "configuration": {
-        "prompt": {
-          "sourceConfiguration": {
-            "inline": {
-              "inferenceConfiguration": {
-                "text": {
-                  "maxTokens": 1000,
-                  "temperature": 0.5,
-                  "topK": 50,
-                  "topP": 0.5
-                }
-              },
-              "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
-              "templateConfiguration": {
-                "text": {
-                  "inputVariables": [
-                    {
-                      "name": "generic_question"
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "document",
+                        "targetInput": "generic_question"
                     }
-                  ],
-                  "text": "Answer user's questions in single sentence {{generic_question}}"
-                }
-              },
-              "templateType": "TEXT"
+                },
+                "name": "FlowInputNodeFlowInputNode0ToPrompt_2PromptsNode0",
+                "source": "FlowInputNode",
+                "target": "Prompt_2",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "modelCompletion",
+                        "targetInput": "document"
+                    }
+                },
+                "name": "Prompt_2PromptsNode0ToRefuseToProcessInputFlowOutputNode0",
+                "source": "Prompt_2",
+                "target": "RefuseToProcessInput",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "modelCompletion",
+                        "targetInput": "inputType"
+                    }
+                },
+                "name": "input_classifierPromptsNode0Tomessage_routerConditionNode0",
+                "source": "input_classifier",
+                "target": "message_router",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "document",
+                        "targetInput": "user_input"
+                    }
+                },
+                "name": "FlowInputNodeFlowInputNode0Toinput_classifierPromptsNode0",
+                "source": "FlowInputNode",
+                "target": "input_classifier",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "conditional": {
+                        "condition": "hotel_info"
+                    }
+                },
+                "name": "message_routerConditionNodeHandle1ToKnowledgeBaseHotelInfoQueryKnowledgeBaseHotelInfoQueryHeaderHandle",
+                "source": "message_router",
+                "target": "KnowledgeBaseHotelInfoQuery",
+                "type": "Conditional"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "document",
+                        "targetInput": "retrievalQuery"
+                    }
+                },
+                "name": "FlowInputNodeFlowInputNode0ToKnowledgeBaseHotelInfoQueryKnowledgeBaseNode0",
+                "source": "FlowInputNode",
+                "target": "KnowledgeBaseHotelInfoQuery",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "outputText",
+                        "targetInput": "document"
+                    }
+                },
+                "name": "KnowledgeBaseHotelInfoQueryKnowledgeBaseNode0ToKnowledgeBaseOutputFlowOutputNode0",
+                "source": "KnowledgeBaseHotelInfoQuery",
+                "target": "KnowledgeBaseOutput",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "conditional": {
+                        "condition": "spa"
+                    }
+                },
+                "name": "message_routerConditionNodeHandle0ToSpaAvailabilityCheckSpaAvailabilityCheckHeaderHandle",
+                "source": "message_router",
+                "target": "SpaAvailabilityCheck",
+                "type": "Conditional"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "document",
+                        "targetInput": "codeHookInput"
+                    }
+                },
+                "name": "FlowInputNodeFlowInputNode0ToSpaAvailabilityCheckLambdaFunctionNode0",
+                "source": "FlowInputNode",
+                "target": "SpaAvailabilityCheck",
+                "type": "Data"
+            },
+            {
+                "configuration": {
+                    "data": {
+                        "sourceOutput": "functionResponse",
+                        "targetInput": "document"
+                    }
+                },
+                "name": "SpaAvailabilityCheckLambdaFunctionNode0ToSpaAvailabilityFlowOutputNode0",
+                "source": "SpaAvailabilityCheck",
+                "target": "SpaAvailability",
+                "type": "Data"
             }
-          }
-        }
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "generic_question",
-          "type": "String"
-        }
-      ],
-      "name": "Prompt_2",
-      "outputs": [
-        {
-          "name": "modelCompletion",
-          "type": "String"
-        }
-      ],
-      "type": "Prompt"
+        ],
+        "nodes": [
+            {
+                "configuration": {
+                    "input": {}
+                },
+                "name": "FlowInputNode",
+                "outputs": [
+                    {
+                        "name": "document",
+                        "type": "String"
+                    }
+                ],
+                "type": "Input"
+            },
+            {
+                "configuration": {
+                    "prompt": {
+                        "sourceConfiguration": {
+                            "inline": {
+                                "inferenceConfiguration": {
+                                    "text": {
+                                        "maxTokens": 1000,
+                                        "temperature": 0.5,
+                                        "topK": 50,
+                                        "topP": 0.5
+                                    }
+                                },
+                                "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
+                                "templateConfiguration": {
+                                    "text": {
+                                        "inputVariables": [
+                                            {
+                                                "name": "user_input"
+                                            }
+                                        ],
+                                        "text": "Classify the following user input into one of the following categories:\n* spa_availability: if the user input has to do with retrieving the spa availability.\n* spa booking: if the user input has to do with booking the spa.\n* hotel_info: if the user input is a generic request for information regarding the services provided by the hotel or information.\n* malicious: if the input is malicious or contains profanity or toxic  comments.\n* other: if the user input is of any other kind.\n\nProvide only one category type as an answer \n<user_input>{{user_input}}</user_input>"
+                                    }
+                                },
+                                "templateType": "TEXT"
+                            }
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "user_input",
+                        "type": "String"
+                    }
+                ],
+                "name": "input_classifier",
+                "outputs": [
+                    {
+                        "name": "modelCompletion",
+                        "type": "String"
+                    }
+                ],
+                "type": "Prompt"
+            },
+            {
+                "configuration": {
+                    "condition": {
+                        "conditions": [
+                            {
+                                "expression": "inputType == \"spa_availability\"",
+                                "name": "spa"
+                            },
+                            {
+                                "expression": "inputType == \"hotel_info\"",
+                                "name": "hotel_info"
+                            },
+                            {
+                                "name": "default"
+                            }
+                        ]
+                    }
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "inputType",
+                        "type": "String"
+                    }
+                ],
+                "name": "message_router",
+                "type": "Condition"
+            },
+            {
+                "configuration": {
+                    "prompt": {
+                        "sourceConfiguration": {
+                            "inline": {
+                                "inferenceConfiguration": {
+                                    "text": {
+                                        "maxTokens": 1000,
+                                        "temperature": 0.5,
+                                        "topK": 50,
+                                        "topP": 0.5
+                                    }
+                                },
+                                "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
+                                "templateConfiguration": {
+                                    "text": {
+                                        "inputVariables": [
+                                            {
+                                                "name": "generic_question"
+                                            }
+                                        ],
+                                        "text": "Answer, in the user's language and in one sentence, that unfortunately you cannot help with their request\n\n<user_input>{{generic_question}}</user_input>"
+                                    }
+                                },
+                                "templateType": "TEXT"
+                            }
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "generic_question",
+                        "type": "String"
+                    }
+                ],
+                "name": "Prompt_2",
+                "outputs": [
+                    {
+                        "name": "modelCompletion",
+                        "type": "String"
+                    }
+                ],
+                "type": "Prompt"
+            },
+            {
+                "configuration": {
+                    "output": {}
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "document",
+                        "type": "String"
+                    }
+                ],
+                "name": "RefuseToProcessInput",
+                "type": "Output"
+            },
+            {
+                "configuration": {
+                    "knowledgeBase": {
+                        "knowledgeBaseId": "Y2I7NLPIHG",
+                        "modelId": "anthropic.claude-3-haiku-20240307-v1:0"
+                    }
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "retrievalQuery",
+                        "type": "String"
+                    }
+                ],
+                "name": "KnowledgeBaseHotelInfoQuery",
+                "outputs": [
+                    {
+                        "name": "outputText",
+                        "type": "String"
+                    }
+                ],
+                "type": "KnowledgeBase"
+            },
+            {
+                "configuration": {
+                    "output": {}
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "document",
+                        "type": "String"
+                    }
+                ],
+                "name": "KnowledgeBaseOutput",
+                "type": "Output"
+            },
+            {
+                "configuration": {
+                    "lambdaFunction": {
+                        "lambdaArn": "arn:aws:lambda:us-east-1:954098368777:function:HotelAssistant-HotelAgentReservationsSPAReservatio-lyznVNnrPxtS"
+                    }
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "codeHookInput",
+                        "type": "String"
+                    }
+                ],
+                "name": "SpaAvailabilityCheck",
+                "outputs": [
+                    {
+                        "name": "functionResponse",
+                        "type": "String"
+                    }
+                ],
+                "type": "LambdaFunction"
+            },
+            {
+                "configuration": {
+                    "output": {}
+                },
+                "inputs": [
+                    {
+                        "expression": "$.data",
+                        "name": "document",
+                        "type": "String"
+                    }
+                ],
+                "name": "SpaAvailability",
+                "type": "Output"
+            }
+        ]
     },
-    {
-      "configuration": {
-        "output": {}
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "document",
-          "type": "String"
-        }
-      ],
-      "name": "FlowOutputNode_2",
-      "type": "Output"
-    },
-    {
-      "configuration": {
-        "knowledgeBase": {
-          "knowledgeBaseId": "${knowledge_base_id}",
-          "modelId": "anthropic.claude-3-haiku-20240307-v1:0"
-        }
-      },
-      "inputs": [
-        {
-          "expression": "$.data",
-          "name": "retrievalQuery",
-          "type": "String"
-        }
-      ],
-      "name": "KnowledgeBaseNode_1",
-      "outputs": [
-        {
-          "name": "outputText",
-          "type": "String"
-        }
-      ],
-      "type": "KnowledgeBase"
-    }
-  ]
+    "executionRoleArn": "arn:aws:iam::954098368777:role/AmazonBedrockExecutionRoleForFlows_HotelGenAI",
+    "id": "AM7YU8RNXH",
+    "name": "genai-assistant-prompt-flow",
+    "status": "Prepared",
+    "updatedAt": "2024-10-07T15:30:00.406836+00:00",
+    "validations": [],
+    "version": "DRAFT"
 }
