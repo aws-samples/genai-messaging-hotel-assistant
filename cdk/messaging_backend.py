@@ -18,11 +18,10 @@ class MessagingBackend(Construct):
     def __init__(self,
                  scope: Construct,
                  construct_id: str,
-                 agent: bedrock.CfnAgent,
-                 agent_alias: bedrock.CfnAgentAlias,
                  telegram_api_key: CfnParameter,
                  whatsapp_api_key: CfnParameter,
                  whatsapp_id: CfnParameter,
+                 assistant_flow_alias: bedrock.CfnFlowAlias,
                  telegram_backend_lamda_dir: Path = Path('lambda') / 'telegram_api',
                  whatsapp_backend_lamda_dir: Path = Path('lambda') / 'whatsapp_api',
                  webhook_registration_lamda_dir: Path = Path('lambda') / 'set_webhook',
@@ -35,8 +34,6 @@ class MessagingBackend(Construct):
         ----------
         scope : Construct scope (typically `self` from the caller)
         construct_id : Unique CDK ID for this construct
-        agent: Bedrock Agent that will be invoked by this backend
-        agent_alias: Bedrock Agent Alias to use
         telegram_api_key : API key to use for the Telegram client to be able to send messages
         whatsapp_api_key : Temporary or permanent API key for communicating with the WhatsApp servers
         whatsapp_id : WhatsApp phone number ID for the bot to use for sending messages
@@ -70,25 +67,23 @@ class MessagingBackend(Construct):
                                     secret_string_value=SecretValue.unsafe_plain_text(whatsapp_api_key.value_as_string))
         whatsapp_verify_token_secret = sm.Secret(self, 'WhatsAppAPIVerifyToken',
                                                  secret_name='WhatsAppAPIVerifyToken')
+        invoke_flow_statement = iam.PolicyStatement(sid='BedrockInvokeFlowStatement',
+                                                    effect=iam.Effect.ALLOW,
+                                                    resources=[assistant_flow_alias.attr_arn],
+                                                    actions=['bedrock:InvokeFlow'])
         base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
             managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         telegram_lambda_role = iam.Role(scope=self,
                                         id='BackendTelegramLambdaRole',
                                         assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
                                         managed_policies=[base_lambda_policy])
-        telegram_lambda_role.add_to_policy(iam.PolicyStatement(sid='BedrockInvokeAgentStatement',
-                                                               effect=iam.Effect.ALLOW,
-                                                               resources=[agent_alias.attr_agent_alias_arn],
-                                                               actions=['bedrock:InvokeAgent']))
+        telegram_lambda_role.add_to_policy(invoke_flow_statement)
         telegram_secret.grant_read(telegram_lambda_role)
         whatsapp_lambda_role = iam.Role(scope=self,
                                         id='BackendWhatsAppLambdaRole',
                                         assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
                                         managed_policies=[base_lambda_policy])
-        whatsapp_lambda_role.add_to_policy(iam.PolicyStatement(sid='BedrockInvokeAgentStatement',
-                                                               effect=iam.Effect.ALLOW,
-                                                               resources=[agent_alias.attr_agent_alias_arn],
-                                                               actions=['bedrock:InvokeAgent']))
+        whatsapp_lambda_role.add_to_policy(invoke_flow_statement)
         whatsapp_secret.grant_read(whatsapp_lambda_role)
         whatsapp_verify_token_secret.grant_read(whatsapp_lambda_role)
         # Telegram API-related resources
@@ -98,8 +93,8 @@ class MessagingBackend(Construct):
                                                            id='TelegramAPI',
                                                            code=image,
                                                            architecture=lambda_architecture,
-                                                           environment={'AGENT_ID': agent.attr_agent_id,
-                                                                        'AGENT_ALIAS_ID': agent_alias.attr_agent_alias_id,
+                                                           environment={'FLOW_ID': assistant_flow_alias.attr_flow_id,
+                                                                        'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
                                                                         'SECRET_NAME': telegram_secret.secret_name},
                                                            timeout=aws_cdk.Duration.seconds(30),
                                                            role=telegram_lambda_role)
@@ -122,11 +117,12 @@ class MessagingBackend(Construct):
                                                            id='WhatsAppAPI',
                                                            code=image,
                                                            architecture=lambda_architecture,
-                                                           environment={'WHATSAPP_VERIFY_TOKEN_NAME': whatsapp_verify_token_secret.secret_name,
-                                                                        'WHATSAPP_ID': whatsapp_id.value_as_string,
-                                                                        'AGENT_ID': agent.attr_agent_id,
-                                                                        'AGENT_ALIAS_ID': agent_alias.attr_agent_alias_id,
-                                                                        'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name},
+                                                           environment={
+                                                               'WHATSAPP_VERIFY_TOKEN_NAME': whatsapp_verify_token_secret.secret_name,
+                                                               'WHATSAPP_ID': whatsapp_id.value_as_string,
+                                                               'FLOW_ID': assistant_flow_alias.attr_flow_id,
+                                                               'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
+                                                               'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name},
                                                            timeout=aws_cdk.Duration.seconds(30),
                                                            role=whatsapp_lambda_role)
         self.whatsapp_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))
@@ -163,3 +159,6 @@ class MessagingBackend(Construct):
                                             properties={'secret_name': telegram_secret.secret_name,
                                                         'webhook_uri': f'{self.api.url}telegram'})
         webhook_registerer.node.add_dependency(telegram_api)
+
+        # Declare the stack outputs
+        aws_cdk.CfnOutput(scope=self, id='APIGWURL', value=self.api.url)

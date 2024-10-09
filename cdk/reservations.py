@@ -5,7 +5,6 @@ from constructs import Construct
 from aws_cdk import (aws_dynamodb as ddb,
                      aws_ecr_assets,
                      aws_iam as iam,
-                     aws_apigateway as api_gw,
                      aws_lambda as lambda_)
 
 
@@ -13,7 +12,6 @@ class Reservations(Construct):
     def __init__(self,
                  scope: Construct,
                  construct_id: str,
-                 rest_api: api_gw.RestApi,
                  reservations_lambda_dir: Path = Path('lambda') / 'reservations',
                  lambda_platform: aws_ecr_assets.Platform | None = None,
                  lambda_architecture: lambda_.Architecture | None = None):
@@ -24,7 +22,6 @@ class Reservations(Construct):
         ----------
         scope : Construct scope (typically `self` from the caller)
         construct_id : Unique CDK ID for this construct
-        rest_api: Rest API where the SPA reservation API will be registered
         reservations_lambda_dir : Path to the directory containing the source code for the
                                          Lambda that will set the webhook URL to the new API Gateway.
         lambda_platform : Platform to use for the lambdas. If not provided, use the platform of the current computer.
@@ -67,14 +64,3 @@ class Reservations(Construct):
                                                       role=spa_lambda_role)
         self.reservations_table.grant_read_write_data(spa_lambda_role)
         self.spa_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))
-
-        # Register the lambda for GET & POST with the rest API
-        spa_api = rest_api.root.add_resource('spa',
-                                             default_integration=api_gw.LambdaIntegration(self.spa_lambda))
-        spa_api.add_method('GET',
-                           request_parameters={'method.request.querystring.date': True},
-                           request_validator=api_gw.RequestValidator(scope=self,
-                                                                     id='SpaReservationsValiaator',
-                                                                     rest_api=rest_api,
-                                                                     validate_request_parameters=True))
-        spa_api.add_method('POST')

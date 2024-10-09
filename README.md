@@ -70,14 +70,14 @@ The code in this project is organized as follows:
 
 * [`cdk`](cdk): CDK python code for deploying the infrastructure.
   - [`hotel_assistant.py`](cdk/hotel_assistant.py): Main CDK Stack code
-  - [`hotel_aoss_kb_stack.py`](cdk/hotel_aoss_kb_stack.py): An opinionated, easy-to-use, CDK construct that creates
+  - [`hotel_aoss_kb_stack.py`](cdk/aoss_kb_stack.py): An opinionated, easy-to-use, CDK construct that creates
     the OpenSearch Serverless Collection, S3 deployment, Bedrock Agent & Bedrock knowledge base, all using native
     CDK L1 constructs. The OpenSearch Serverless Collection Index is, however, created as a Custom resource in this
     stack with the code in the [`collections`](lambda/collections) lambda, since it cannot be created with CDK today.
   - [`messaging_backend.py`](cdk/messaging_backend.py): CDK construct for deploying the API gateway with Lambda
     integration for implementing the telegram webhook backend.
 * [`docs`](docs): Folder with documents that will be deployed to S3 when deploying the stack components in
-  [`hotel_aoss_kb_stack.py`](cdk/hotel_aoss_kb_stack.py).
+  [`hotel_aoss_kb_stack.py`](cdk/aoss_kb_stack.py).
 * [`lambda`](lambda): Lambda code. All lambdas are implemented in python with container runtimes.
   - [`collections`](lambda/collections): Lambda code implementing the
     [`CfnCustomResource`](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.CfnCustomResource.html) that

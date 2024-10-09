@@ -279,7 +279,7 @@
     {
       "configuration": {
         "knowledgeBase": {
-          "knowledgeBaseId": "Y2I7NLPIHG",
+          "knowledgeBaseId": "{{KNOWLEDGE_BASE_ID}}",
           "modelId": "anthropic.claude-3-haiku-20240307-v1:0"
         }
       },
