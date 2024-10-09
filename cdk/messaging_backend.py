@@ -159,6 +159,3 @@ class MessagingBackend(Construct):
                                             properties={'secret_name': telegram_secret.secret_name,
                                                         'webhook_uri': f'{self.api.url}telegram'})
         webhook_registerer.node.add_dependency(telegram_api)
-
-        # Declare the stack outputs
-        aws_cdk.CfnOutput(scope=self, id='APIGWURL', value=self.api.url)

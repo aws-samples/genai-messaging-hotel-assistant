@@ -56,10 +56,8 @@ class AssistantFlow(Construct):
                                                     effect=iam.Effect.ALLOW,
                                                     resources=[text_model_arn],
                                                     actions=['bedrock:InvokeModel']))
-        flow_role.add_to_policy(iam.PolicyStatement(sid='AmazonBedrockFlowsInvokeSpaAvilabilityLambda',
-                                                    effect=iam.Effect.ALLOW,
-                                                    resources=[spa_availability_lambda.function_arn],
-                                                    actions=['lambda:InvokeFunction']))
+        spa_availability_lambda.grant_invoke(flow_role)
+        spa_availability_lambda.grant_invoke(iam.ServicePrincipal('bedrock.amazonaws.com'))
 
         # Declare the stack outputs
         aws_cdk.CfnOutput(scope=self, id='AssistantFlow', value=self.flow.attr_arn)

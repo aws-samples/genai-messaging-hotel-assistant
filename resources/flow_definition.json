@@ -330,7 +330,7 @@
       "outputs": [
         {
           "name": "functionResponse",
-          "type": "String"
+          "type": "Object"
         }
       ],
       "type": "LambdaFunction"
@@ -341,9 +341,9 @@
       },
       "inputs": [
         {
-          "expression": "$.data",
+          "expression": "$.data.body",
           "name": "document",
-          "type": "String"
+          "type": "Array"
         }
       ],
       "name": "SpaAvailability",
