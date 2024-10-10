@@ -46,7 +46,9 @@ def get_availability(event):
         available_slots = [slot for slot in generate_all_slots() if slot not in reserved_slots]
 
     return {'statusCode': 200,
-            'body': available_slots}
+            'body': {'response_type': 'spa_availability',
+                     'date': day,
+                     'available_slots': available_slots}}
 
 
 def create_booking(event):
@@ -86,8 +88,10 @@ def create_booking(event):
 
 
 def generate_all_slots():
-    start_time = datetime.strptime('09:00', '%H:%M')
-    end_time = datetime.strptime('17:00', '%H:%M')
+    t0 = datetime.today()
+    today = datetime(year=t0.year, month=t0.month, day=t0.day)
+    start_time = today + timedelta(days=1, hours=9)
+    end_time = today + timedelta(days=1, hours=16)
     time_slots = []
 
     current_time = start_time
