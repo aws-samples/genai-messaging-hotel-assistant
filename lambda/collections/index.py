@@ -71,7 +71,7 @@ def handle_event(event, context):
     """
     # Ignore all non-create events
     if event['RequestType'] != 'Create':
-        return
+        return {}
 
     # Get Collection name
     collection_name = event.get('ResourceProperties', dict()).get('collection')
@@ -95,3 +95,5 @@ def handle_event(event, context):
                             text_field_name=text_field,
                             metadata_field_name=metadata_field,
                             vector_size=vector_size)
+
+    return {}

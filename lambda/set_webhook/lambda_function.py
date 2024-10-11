@@ -51,7 +51,6 @@ def handle_event(event, context):
     # Get the operational params
     secret_name = event.get('ResourceProperties', {}).get('secret_name')
     webhook_uri = event.get('ResourceProperties', {}).get('webhook_uri')
-    print(webhook_uri)
     sm = boto3.client('secretsmanager')
     telegram_api_key = sm.get_secret_value(SecretId=secret_name).get('SecretString', '__INVALID__')
 

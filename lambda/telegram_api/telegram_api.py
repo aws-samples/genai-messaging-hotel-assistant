@@ -132,7 +132,7 @@ async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> Non
                                 completion += (f'There are no available Spa slots for the {day}, please contact '
                                                'the hotel reception to check other options.')
                             else:
-                                completion += (f'Here are the available Spa slots for {day}:\n\n' +
+                                completion += (f'Here are the available Spa slots for {day}:\n\n\t· ' +
                                                '\n\t· '.join(slots) +
                                                '\n\nPlease call the hotel reception to book your session.')
                         else:
@@ -141,26 +141,7 @@ async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> Non
                         completion += document
                     else:
                         print(f'Cannot intepret output from flow "{document}"')
-        completion = ''
-        try:
-            for event in response.get('completion'):
-                chunk = event['chunk']
-                completion = completion + chunk['bytes'].decode()
 
-            if len(completion) == 0:
-                await update.message.chat.send_message('Let me think...', parse_mode='HTML',
-                                                       disable_web_page_preview=False)
-                continue
-        except ClientError as e:
-            logging.exception(e)
-            await update.message.chat.send_message('Let me think...', parse_mode='HTML',
-                                                   disable_web_page_preview=False)
-            continue
-        except KeyError as e:
-            logging.exception(e)
-            await update.message.chat.send_message('Let me think...', parse_mode='HTML',
-                                                   disable_web_page_preview=False)
-            continue
         await update.message.chat.send_message(completion, parse_mode='HTML',
                                                disable_web_page_preview=False)
         return
