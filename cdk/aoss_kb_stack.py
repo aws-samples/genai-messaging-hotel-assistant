@@ -9,6 +9,7 @@ from aws_cdk import (CustomResource,
                      aws_ecr_assets,
                      aws_iam as iam,
                      aws_lambda as lambda_,
+                     aws_logs as logs,
                      aws_opensearchserverless as os_serverless,
                      aws_s3 as s3,
                      aws_s3_deployment as s3_deployment,
@@ -119,7 +120,8 @@ class AOSSKB(Construct):
                                                       code=image,
                                                       architecture=lambda_architecture,
                                                       timeout=aws_cdk.Duration.seconds(60),
-                                                      role=index_lambda_role)
+                                                      role=index_lambda_role,
+                                                      log_retention=logs.RetentionDays.THREE_DAYS)
 
         res_provider = custom_resources.Provider(scope=self,
                                                  id='CustomResourceIndexCreator',
@@ -224,7 +226,8 @@ class AOSSKB(Construct):
                                                                       self.knowledge_base.attr_knowledge_base_id,
                                                                   'DATA_SOURCE_ID':
                                                                       self.data_source.attr_data_source_id},
-                                                     role=kb_lambda_role)
+                                                     role=kb_lambda_role,
+                                                     log_retention=logs.RetentionDays.THREE_DAYS)
         kb_lambda_role.add_to_policy(iam.PolicyStatement(sid='SyncKBStatement',
                                                          effect=iam.Effect.ALLOW,
                                                          resources=[self.knowledge_base.attr_knowledge_base_arn],

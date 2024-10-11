@@ -7,6 +7,7 @@ from aws_cdk import (aws_apigateway as api_gw,
                      aws_ecr_assets,
                      aws_iam as iam,
                      aws_lambda as lambda_,
+                     aws_logs as logs,
                      aws_secretsmanager as sm,
                      custom_resources,
                      CfnParameter,
@@ -97,7 +98,8 @@ class MessagingBackend(Construct):
                                                                         'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
                                                                         'SECRET_NAME': telegram_secret.secret_name},
                                                            timeout=aws_cdk.Duration.seconds(30),
-                                                           role=telegram_lambda_role)
+                                                           role=telegram_lambda_role,
+                                                           log_retention=logs.RetentionDays.THREE_DAYS)
         self.telegram_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))
 
         # Create the API Gateway with the resource pointing to the Telegram lambda
@@ -124,7 +126,8 @@ class MessagingBackend(Construct):
                                                                'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
                                                                'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name},
                                                            timeout=aws_cdk.Duration.seconds(30),
-                                                           role=whatsapp_lambda_role)
+                                                           role=whatsapp_lambda_role,
+                                                           log_retention=logs.RetentionDays.THREE_DAYS)
         self.whatsapp_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))
 
         # Create the API Gateway resource to the WhatsApp lambda
@@ -149,7 +152,8 @@ class MessagingBackend(Construct):
                                                       code=image,
                                                       architecture=lambda_architecture,
                                                       timeout=aws_cdk.Duration.seconds(30),
-                                                      role=webhook_registration_role)
+                                                      role=webhook_registration_role,
+                                                      log_retention=logs.RetentionDays.THREE_DAYS)
         res_provider = custom_resources.Provider(scope=self,
                                                  id='CustomResourceProviderWebhookRegistration',
                                                  on_event_handler=cust_res_lambda)

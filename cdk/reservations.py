@@ -5,7 +5,8 @@ from constructs import Construct
 from aws_cdk import (aws_dynamodb as ddb,
                      aws_ecr_assets,
                      aws_iam as iam,
-                     aws_lambda as lambda_)
+                     aws_lambda as lambda_,
+                     aws_logs as logs)
 
 
 class Reservations(Construct):
@@ -61,6 +62,7 @@ class Reservations(Construct):
                                                       environment={'DDB_TABLE_NAME':
                                                                        self.reservations_table.table_name},
                                                       timeout=aws_cdk.Duration.seconds(30),
-                                                      role=spa_lambda_role)
+                                                      role=spa_lambda_role,
+                                                      log_retention=logs.RetentionDays.THREE_DAYS)
         self.reservations_table.grant_read_write_data(spa_lambda_role)
         self.spa_lambda.grant_invoke(iam.ServicePrincipal('apigateway.amazonaws.com'))
