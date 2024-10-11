@@ -16,8 +16,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 sm = boto3.client('secretsmanager')
 TELEGRAM_API_KEY = sm.get_secret_value(SecretId=os.environ.get('SECRET_NAME')).get('SecretString', '__INVALID__')
 agents_runtime = boto3.client('bedrock-agent-runtime')
-AGENT_ID = os.environ.get('AGENT_ID')
-AGENT_ALIAS_ID = os.environ.get('AGENT_ALIAS_ID')
+FLOW_ID = os.environ.get('FLOW_ID', '__INVALID__')
+FLOW_ALIAS_ID = os.environ.get('FLOW_ALIAS_ID', '__INVALID__')
 
 
 async def handle_telegram_msg(telegram_app, body):
@@ -38,12 +38,6 @@ async def start(update, _: ContextTypes.DEFAULT_TYPE):
     # Set the typing indicator
     await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
 
-    # Invalidate any previous Bedrock Agents session
-    agents_runtime.invoke_agent(agentId=AGENT_ID,
-                                agentAliasId=AGENT_ALIAS_ID,
-                                sessionId=f'{update.message.chat_id}',
-                                inputText='Hi',
-                                endSession=True)
     # Get the ID of the user who sent the message
     user_reservations = get_reservations_by_chat_id(update.message.from_user.id,
                                                     fallback_name=update.message.from_user.first_name)
@@ -107,7 +101,7 @@ async def start(update, _: ContextTypes.DEFAULT_TYPE):
                                                    reply_to_message_id=main_msg.message_id)
 
 
-async def respond_with_agent(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process a normal user message using the given Bedrock Agent
     """
@@ -120,11 +114,33 @@ async def respond_with_agent(update: Update, _: ContextTypes.DEFAULT_TYPE) -> No
                                               main_guest_name=update.message.from_user.first_name)
 
     for _ in range(2):
-        response = agents_runtime.invoke_agent(agentId=AGENT_ID,
-                                               agentAliasId=AGENT_ALIAS_ID,
-                                               sessionId=f'{update.message.chat_id}',
-                                               sessionState={'sessionAttributes': session_attrs},
-                                               inputText=update.message.text)
+        response = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
+                                              flowIdentifier=FLOW_ID,
+                                              inputs=[{'content': {'document': update.message.text},
+                                                       'nodeName': 'FlowInputNode',
+                                                       'nodeOutputName': 'document'}])
+        completion = ''
+        for event in response:
+            if event == 'responseStream':
+                for i in response[event]:
+                    document = i.get('flowOutputEvent', {}).get('content', {}).get('document', {})
+                    if isinstance(document, dict):
+                        if document.get('response_type', '') == 'spa_availability':
+                            slots = document.get('available_slots', [])
+                            day = document.get('date')
+                            if len(slots) == 0:
+                                completion += (f'There are no available Spa slots for the {day}, please contact '
+                                               'the hotel reception to check other options.')
+                            else:
+                                completion += (f'Here are the available Spa slots for {day}:\n\n' +
+                                               '\n\t· '.join(slots) +
+                                               '\n\nPlease call the hotel reception to book your session.')
+                        else:
+                            print(f'ERROR: Cannot interpret backend message: "{document}"')
+                    elif isinstance(document, str):
+                        completion += document
+                    else:
+                        print(f'Cannot intepret output from flow "{document}"')
         completion = ''
         try:
             for event in response.get('completion'):
@@ -164,7 +180,7 @@ async def main(event):
     await telegram_app.initialize()
     # Set the Telegram handlers for the commands and regular text messages
     telegram_app.add_handler(CommandHandler('start', start))
-    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond_with_agent))
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond_with_flow))
 
     # Handle the different cases
     match event['requestContext']['httpMethod']:

@@ -343,7 +343,7 @@
         {
           "expression": "$.data.body",
           "name": "document",
-          "type": "Array"
+          "type": "Object"
         }
       ],
       "name": "SpaAvailability",
