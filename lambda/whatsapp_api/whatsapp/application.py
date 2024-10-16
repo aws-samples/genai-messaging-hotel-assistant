@@ -4,7 +4,8 @@ from httpx import URL, AsyncClient
 from whatsapp.update import Update
 from whatsapp.contact import Contact
 from whatsapp.conversation import Conversation
-from whatsapp.message import BaseMessage, MediaMessage, TextMessage, LocationMessage
+from whatsapp.message import (BaseMessage, InteractiveListReplyMessage, LocationMessage,
+                              MediaMessage, Row, TextMessage)
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
                        'https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components for details')
@@ -182,6 +183,18 @@ class WhatsAppApplication:
                                                                           msg.get('timestamp', 0))),
                                                                   text=msg.get('text', {'body': '__INVALID__'}).get(
                                                                       'body', ''))))
+                        case 'interactive':
+                            reply_id = msg.get('list_reply', {}).get('id', '__INVALID__')
+                            title = msg.get('list_reply', {}).get('title')
+                            description = msg.get('list_reply', {}).get('description')
+                            updates.append(Update(sender=sender,
+                                                  instant=datetime.fromtimestamp(
+                                                      WhatsAppApplication._parseint(msg.get('timestamp', 0))),
+                                                  conversation=conversation,
+                                                  msg=InteractiveListReplyMessage(msg_id=msg.get('id', '__INVALID__'),
+                                                                                  reply=Row(id=reply_id,
+                                                                                            title=title,
+                                                                                            description=description))))
                         case _:
                             raise NotImplementedError(f'Cannot parse message of type "{msg.get("type")}"')
 

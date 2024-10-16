@@ -148,6 +148,7 @@ class InteractiveListMessage(BaseMessage):
 
     These messages present the user with a list of nested options the user can choose from
     """
+    msg_id: str = ''
     header: str | None = None
     body: str
     footer: str | None = None
@@ -178,3 +179,14 @@ class InteractiveListMessage(BaseMessage):
             response['interactive']['footer'] = {'text': self.footer}
 
         return response
+
+
+@dataclass(kw_only=True)
+class InteractiveListReplyMessage(BaseMessage):
+    """
+    Class representing an interactive message.
+
+    These messages present the user with a list of nested options the user can choose from
+    """
+    msg_id: str = ''
+    reply: Row
