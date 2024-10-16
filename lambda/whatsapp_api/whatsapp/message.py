@@ -117,3 +117,64 @@ class LocationMessage(BaseMessage):
                              'longitude': self.longitude,
                              'name': self.name,
                              'address': self.address}}
+
+
+@dataclass
+class Row:
+    id: str
+    title: str
+    description: str | None = None
+
+    def serialize(self):
+        return {'id': self.id,
+                'title': self.title,
+                'description': self.description}
+
+
+@dataclass
+class Section:
+    title: str
+    rows: list[Row]
+
+    def serialize(self):
+        return {'title': self.title,
+                'rows': [r.serialize() for r in self.rows]}
+
+
+@dataclass(kw_only=True)
+class InteractiveListMessage(BaseMessage):
+    """
+    Class representing an interactive message.
+
+    These messages present the user with a list of nested options the user can choose from
+    """
+    header: str | None = None
+    body: str
+    footer: str | None = None
+    button: str
+    sections: list[Section]
+
+    def serialize(self, recipient: Contact) -> dict[str: str | int]:
+        """
+        Serialize the message into a dictionary that can be sent using the Meta API.
+
+        Options can be divided into
+
+        https://developers.facebook.com/docs/whatsapp/cloud-api/messages/location-messages
+        """
+        response = {'messaging_product': 'whatsapp',
+                    'recipient_type': 'individual',
+                    'to': recipient.whatsapp_id,
+                    'type': 'interactive',
+                    'interactive': {'type': 'list',
+                                    'body': {'text': self.body},
+                                    'action': {'sections': [s.serialize() for s in self.sections]}}}
+        response['interactive']['action']['button'] = self.button
+
+        # Add optional fields
+        if self.header is not None:
+            response['interactive']['header'] = {'type': 'text', 'text': self.header}
+        if self.footer is not None:
+            response['interactive']['footer'] = {'text': self.footer}
+
+        return response
