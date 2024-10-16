@@ -314,7 +314,7 @@
                       "name": "generic_question"
                     }
                   ],
-                  "text": "Answer, in the user's language and in one sentence, that unfortunately you cannot help with their request\n<user_input>{{generic_question}}</user_input>"
+                  "text": "Answer politely, in the user's language and in one sentence, that unfortunately you cannot help with their request\n<user_input>{{generic_question}}</user_input>"
                 }
               },
               "templateType": "TEXT"
