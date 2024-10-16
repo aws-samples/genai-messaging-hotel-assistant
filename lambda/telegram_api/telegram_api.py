@@ -6,7 +6,6 @@ import logging
 from datetime import date
 import telegram.constants
 from bookings.guests import MemberType
-from botocore.exceptions import ClientError
 from telegram.ext._contexttypes import ContextTypes
 from telegram import Update, InputMediaDocument, InputMediaPhoto
 from bookings.sample import get_reservations_by_chat_id, get_chatbot_session_attrs
@@ -142,8 +141,7 @@ async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> Non
                     else:
                         print(f'Cannot intepret output from flow "{document}"')
 
-        await update.message.chat.send_message(completion, parse_mode='HTML',
-                                               disable_web_page_preview=False)
+        await update.message.chat.send_message(completion, parse_mode='HTML', disable_web_page_preview=False)
         return
 
     await update.message.chat.send_message("I'm sorry, I cannot find that information. You can find out more "

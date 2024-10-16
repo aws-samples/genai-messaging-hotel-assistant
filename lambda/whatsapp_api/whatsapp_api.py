@@ -7,7 +7,7 @@ import logging
 from whatsapp.contact import Contact
 from whatsapp.message import TextMessage
 from whatsapp.application import WhatsAppApplication
-from conversation.handler import start_new_conversation, respond_with_agent
+from conversation.handler import start_new_conversation, respond_with_flow
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
@@ -40,6 +40,7 @@ async def main(event):
                     return {'statusCode': 200, 'body': 'Conversation started with contact', 'isBase64Encoded': False}
                 elif payload.get('object') == 'whatsapp_business_account':
                     # Handle WhatsApp webhook requests
+                    print(payload)
                     try:
                         updates = wa.parse_request(payload)
                     except ValueError:
@@ -47,7 +48,7 @@ async def main(event):
                     for update in updates:
                         if not isinstance(update.msg, TextMessage):
                             logging.error(f'Cannot parse message of type {type(update.msg)}, skipping')
-                        await respond_with_agent(update.msg, app=wa, conversation=update.conversation)
+                        await respond_with_flow(update.msg, app=wa, conversation=update.conversation)
 
                     return {'statusCode': 200, 'body': 'Replied to the contact', 'isBase64Encoded': False}
                 else:

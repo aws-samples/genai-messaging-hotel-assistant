@@ -4,7 +4,7 @@ from bookings.guests import MemberType
 from botocore.exceptions import ClientError
 from whatsapp.conversation import Conversation
 from whatsapp.application import WhatsAppApplication
-from . import agents_runtime, AGENT_ID, AGENT_ALIAS_ID
+from . import agents_runtime, FLOW_ID, FLOW_ALIAS_ID
 from bookings.sample import get_reservations_by_chat_id
 from whatsapp.message import ImageMessage, LocationMessage, TextMessage
 
@@ -14,13 +14,6 @@ async def start_new_conversation(app: WhatsAppApplication,
     """
     Introduce ourselves and present reservation info on new conversation request message.
     """
-    # Invalidate any previous Bedrock Agents session
-    agent_session_id = '_'.join(sorted([f'{p.whatsapp_id}' for p in conversation.participants]))
-    agents_runtime.invoke_agent(agentId=AGENT_ID,
-                                agentAliasId=AGENT_ALIAS_ID,
-                                sessionId=agent_session_id,
-                                inputText='Hi',
-                                endSession=True)
     # Get the ID of the user who sent the message
     recipient = (conversation.participants - {app.contact}).pop()
     user_reservations = get_reservations_by_chat_id(recipient.whatsapp_id,
@@ -65,7 +58,7 @@ async def start_new_conversation(app: WhatsAppApplication,
                                        longitude=reservation.hotel.location.lon,
                                        name=f'{reservation.hotel.name} location',
                                        address=reservation.hotel.location.address),
-                           conversation=conversation)
+                       conversation=conversation)
 
     # If the user is a gold member or above, also send the room key and a welcome message
     if len([g for g in reservation.guests if g.member_level >= MemberType.GOLD]) > 0:
@@ -82,44 +75,46 @@ async def start_new_conversation(app: WhatsAppApplication,
                            conversation=conversation)
 
 
-async def respond_with_agent(msg: TextMessage,
-                             app: WhatsAppApplication,
-                             conversation: Conversation) -> None:
+async def respond_with_flow(msg: TextMessage,
+                            app: WhatsAppApplication,
+                            conversation: Conversation) -> None:
     """
     Process a normal user message using the given Bedrock Agent
     """
-    agent_session_id = '_'.join(sorted([f'{p.whatsapp_id}' for p in conversation.participants]))
     for _ in range(2):
-        response = agents_runtime.invoke_agent(agentId=AGENT_ID,
-                                               agentAliasId=AGENT_ALIAS_ID,
-                                               sessionId=agent_session_id,
-                                               inputText=msg.text)
-        completion = ''
-        try:
-            for event in response.get('completion'):
-                chunk = event['chunk']
-                completion = completion + chunk['bytes'].decode()
+        response = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
+                                              flowIdentifier=FLOW_ID,
+                                              inputs=[{'content': {'document': msg.text},
+                                                       'nodeName': 'FlowInputNode',
+                                                       'nodeOutputName': 'document'}])
+        msgs = []
+        for event in response:
+            if event == 'responseStream':
+                for i in response[event]:
+                    document = i.get('flowOutputEvent', {}).get('content', {}).get('document', {})
+                    if isinstance(document, dict):
+                        if document.get('response_type', '') == 'spa_availability':
+                            slots = document.get('available_slots', [])
+                            day = document.get('date')
+                            if len(slots) == 0:
+                                msgs.append(TextMessage(text=f'There are no available Spa slots for the {day}, '
+                                                             f'please contact the hotel reception to check '
+                                                             f'other options.'))
+                            else:
+                                msgs.append(TextMessage(text=f'Here are the available Spa slots for {day}:\n\n\t· ' +
+                                                             '\n\t· '.join(slots) + '\n\n'
+                                                             'Please call the hotel reception to book your session.'))
+                        else:
+                            print(f'ERROR: Cannot interpret backend message: "{document}"')
+                    elif isinstance(document, str):
+                        msgs.append(TextMessage(text=f'There are no available Spa slots for the {day}, '
+                                                     f'please contact the hotel reception to check '
+                                                     f'other options.'))
+                    else:
+                        print(f'Cannot intepret output from flow "{document}"')
 
-            if len(completion) == 0:
-                await app.send_msg(TextMessage(text='Let me think...',
-                                               preview_links=False),
-                                   conversation=conversation)
-                continue
-        except ClientError as e:
-            logging.exception(e)
-            await app.send_msg(TextMessage(text='Let me think...',
-                                           preview_links=False),
-                               conversation=conversation)
-            continue
-        except KeyError as e:
-            logging.exception(e)
-            await app.send_msg(TextMessage(text='Let me think...',
-                                           preview_links=False),
-                               conversation=conversation)
-            continue
-        await app.send_msg(TextMessage(text=completion,
-                                       preview_links=True),
-                           conversation=conversation)
+        for msg in msgs:
+            await app.send_msg(msg, conversation=conversation)
         return
 
     await app.send_msg(TextMessage(text="I'm sorry, I cannot find that information. You can find out more "
