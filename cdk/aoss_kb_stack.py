@@ -81,7 +81,8 @@ class AOSSKB(Construct):
                                                            sources=[s3_deployment.Source.asset(
                                                                bucket_deployment_dir.as_posix(),
                                                                exclude=['*.pptx',
-                                                                        '*.docx'])],
+                                                                        '*.docx',
+                                                                        '.DS_Store'])],
                                                            destination_bucket=self.bucket)
         # OpenSearch Serverless collection
         self.collection = os_serverless.CfnCollection(scope=self,
