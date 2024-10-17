@@ -6,7 +6,8 @@ from aws_cdk import (aws_dynamodb as ddb,
                      aws_ecr_assets,
                      aws_iam as iam,
                      aws_lambda as lambda_,
-                     aws_logs as logs)
+                     aws_logs as logs,
+                     RemovalPolicy)
 
 
 class Reservations(Construct):
@@ -45,6 +46,7 @@ class Reservations(Construct):
         self.reservations_table = ddb.TableV2(scope=self,
                                               id='Reservations',
                                               table_name='spa_reservations',
+                                              removal_policy=RemovalPolicy.DESTROY,
                                               partition_key=ddb.Attribute(name='date', type=ddb.AttributeType.STRING))
         base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
             managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
