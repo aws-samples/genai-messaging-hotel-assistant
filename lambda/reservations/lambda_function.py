@@ -9,7 +9,6 @@ table = dynamodb.Table(os.environ.get('DDB_TABLE_NAME', 'spa_reservations'))
 
 
 def handle_event(event, context):
-    print(event)
     http_method = event.get('action', 'GET')
 
     if http_method == 'GET':
@@ -20,22 +19,7 @@ def handle_event(event, context):
         return {'statusCode': 400,
                 'body': json.dumps('Unsupported HTTP method')}
 
-
-def get_availability(event):
-    day = event.get('queryStringParameters', {}).get('date',
-                                                     (date.today() + timedelta(days=1)).isoformat())
-
-    if not day:
-        return {'statusCode': 400,
-                'body': json.dumps('Date parameter is required')}
-
-    try:
-        # Validate date format
-        datetime.strptime(day, '%Y-%m-%d')
-    except (ValueError, TypeError):
-        return {'statusCode': 400,
-                'body': json.dumps('Invalid date format. Use YYYY-MM-DD')}
-
+def _get_available_slots(day: date):
     response = table.get_item(Key={'date': day})
 
     if 'Item' not in response:
@@ -45,40 +29,51 @@ def get_availability(event):
         reserved_slots = response['Item'].get('reservations', {})
         available_slots = [slot for slot in generate_all_slots() if slot not in reserved_slots]
 
+    return available_slots
+
+def get_availability(event):
+    day = event.get('queryStringParameters', {}).get('date',
+                                                     (date.today() + timedelta(days=1)).isoformat())
+
+    if not day:
+        return {'statusCode': 400,
+                'body': json.dumps('Date parameter is required')}
+    try:
+        # Validate date format
+        day = datetime.strptime(day, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return {'statusCode': 400,
+                'body': json.dumps('Invalid date format. Use YYYY-MM-DD')}
+
     return {'statusCode': 200,
             'body': {'response_type': 'spa_availability',
                      'date': day,
-                     'available_slots': available_slots}}
+                     'available_slots': _get_available_slots(day)}}
 
 
 def create_booking(event):
     try:
         body = json.loads(event['body'])
-        day = body['date']
         time_slot = body['time_slot']
+        reservation_time = datetime.strptime(time_slot, '%Y-%m-%d %H:%M')
+        day = datetime.strptime(time_slot, '%Y-%m-%d %H:%M').date()
         customer_name = body['customer_name']
     except (json.JSONDecodeError, KeyError):
         return {'statusCode': 400,
                 'body': json.dumps('Invalid request body')}
 
-    try:
-        # Validate date format
-        datetime.strptime(day, '%Y-%m-%d')
-    except ValueError:
-        return {'statusCode': 400,
-                'body': json.dumps('Invalid date format. Use YYYY-MM-DD')}
-
-    if time_slot not in generate_all_slots():
+    if time_slot not in _get_available_slots(day):
         return {'statusCode': 400,
                 'body': json.dumps('Invalid time slot')}
 
     try:
-        table.update_item(Key={'date': day},
-                          UpdateExpression='SET reservations.#ts = :val',
-                          ExpressionAttributeNames={'#ts': time_slot},
-                          ExpressionAttributeValues={':val': customer_name},
-                          ConditionExpression='attribute_not_exists(reservations.#ts)',
-                          ReturnValues='UPDATED_NEW')
+        # Append the reservation to the DDB table
+        response = table.get_item(Key={'date': day})
+        reservations = response.get('Item', {}).get('reservations', {})
+        reservations[time_slot] = customer_name
+        table.put_item(Item={'date': day,
+                             'reservations': reservations,
+                             'expiration_date': int((reservation_time + timedelta(hours=1)).timestamp())})
 
         return {'statusCode': 200,
                 'body': json.dumps('Booking created successfully')}
@@ -87,11 +82,13 @@ def create_booking(event):
                 'body': json.dumps('This time slot is already booked')}
 
 
-def generate_all_slots():
-    t0 = datetime.today()
-    today = datetime(year=t0.year, month=t0.month, day=t0.day)
-    start_time = today + timedelta(days=1, hours=9)
-    end_time = today + timedelta(days=1, hours=16)
+def generate_all_slots(day: date =  datetime.today().date()):
+    """
+    Generate a list with all the valid slots (as ISO-formatted strings) for a particular date
+    """
+    t0 = datetime(year=day.year, month=day.month, day=day.day)
+    start_time = t0 + timedelta(days=1, hours=9)
+    end_time = t0 + timedelta(days=1, hours=16)
     time_slots = []
 
     current_time = start_time

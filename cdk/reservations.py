@@ -47,7 +47,8 @@ class Reservations(Construct):
                                               id='Reservations',
                                               table_name='spa_reservations',
                                               removal_policy=RemovalPolicy.DESTROY,
-                                              partition_key=ddb.Attribute(name='date', type=ddb.AttributeType.STRING))
+                                              partition_key=ddb.Attribute(name='date', type=ddb.AttributeType.STRING),
+                                              time_to_live_attribute='expiration_date')
         base_lambda_policy = iam.ManagedPolicy.from_aws_managed_policy_name(
             managed_policy_name='service-role/AWSLambdaBasicExecutionRole')
         spa_lambda_role = iam.Role(scope=self,
