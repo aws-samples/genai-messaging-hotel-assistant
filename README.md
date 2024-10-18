@@ -90,7 +90,7 @@ The code in this project is organized as follows:
     manually as described [above](#setup).
   - [`telegram_api`](lambda/telegram_api): Lambda code for handling the Telegram Webhook requests.
   - [`whatsapp_api`](lambda/whatsapp_api): Lambda code for handling the WhatsApp Webhook requests.
-* [`resources`](resources): Folder with Agent definition resources. Today it contains a text document with
+* [`resources`](resources): Folder with Flow definition resources. Today it contains a text document with
   the base agent prompt.
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
