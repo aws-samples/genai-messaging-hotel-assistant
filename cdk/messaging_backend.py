@@ -23,6 +23,7 @@ class MessagingBackend(Construct):
                  whatsapp_api_key: CfnParameter,
                  whatsapp_id: CfnParameter,
                  assistant_flow_alias: bedrock.CfnFlowAlias,
+                 spa_availability_lambda: lambda_.FunctionBase,
                  telegram_backend_lamda_dir: Path = Path('lambda') / 'telegram_api',
                  whatsapp_backend_lamda_dir: Path = Path('lambda') / 'whatsapp_api',
                  webhook_registration_lamda_dir: Path = Path('lambda') / 'set_webhook',
@@ -38,6 +39,8 @@ class MessagingBackend(Construct):
         telegram_api_key : API key to use for the Telegram client to be able to send messages
         whatsapp_api_key : Temporary or permanent API key for communicating with the WhatsApp servers
         whatsapp_id : WhatsApp phone number ID for the bot to use for sending messages
+        assistant_flow_alias : Assistant flow alias
+        spa_availability_lambda : Lambda function for handling the Spa reservations
         telegram_backend_lamda_dir : Path to the directory containing the source code for the
                                      Lambda backend for Telegram communications
         whatsapp_backend_lamda_dir : Path to the directory containing the source code for the
@@ -79,6 +82,7 @@ class MessagingBackend(Construct):
                                         assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
                                         managed_policies=[base_lambda_policy])
         telegram_lambda_role.add_to_policy(invoke_flow_statement)
+        spa_availability_lambda.grant_invoke(telegram_lambda_role)
         telegram_secret.grant_read(telegram_lambda_role)
         whatsapp_lambda_role = iam.Role(scope=self,
                                         id='BackendWhatsAppLambdaRole',
@@ -86,6 +90,7 @@ class MessagingBackend(Construct):
                                         managed_policies=[base_lambda_policy])
         whatsapp_lambda_role.add_to_policy(invoke_flow_statement)
         whatsapp_secret.grant_read(whatsapp_lambda_role)
+        spa_availability_lambda.grant_invoke(whatsapp_lambda_role)
         whatsapp_verify_token_secret.grant_read(whatsapp_lambda_role)
         # Telegram API-related resources
         image = lambda_.DockerImageCode.from_image_asset(telegram_backend_lamda_dir.as_posix(),

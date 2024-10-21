@@ -40,4 +40,5 @@ class HotelAssistantStack(Stack):
                                    telegram_api_key=telegram_api_key,
                                    whatsapp_api_key=whatsapp_api_key,
                                    whatsapp_id=whatsapp_id,
-                                   assistant_flow_alias=assistant_flow.flow_alias)
+                                   assistant_flow_alias=assistant_flow.flow_alias,
+                                   spa_availability_lambda=reservations_stack.spa_lambda)
