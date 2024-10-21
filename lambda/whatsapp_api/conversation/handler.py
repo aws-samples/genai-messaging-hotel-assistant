@@ -1,12 +1,10 @@
-import logging
 from datetime import date
 from bookings.guests import MemberType
-from botocore.exceptions import ClientError
 from whatsapp.conversation import Conversation
 from whatsapp.application import WhatsAppApplication
 from . import agents_runtime, FLOW_ID, FLOW_ALIAS_ID
 from bookings.sample import get_reservations_by_chat_id
-from whatsapp.message import ImageMessage, LocationMessage, TextMessage
+from whatsapp.message import ImageMessage, InteractiveListMessage, LocationMessage, Row, Section, TextMessage
 
 
 async def start_new_conversation(app: WhatsAppApplication,
@@ -82,15 +80,17 @@ async def respond_with_flow(msg: TextMessage,
     Process a normal user message using the given Bedrock Agent
     """
     for _ in range(2):
-        response = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
-                                              flowIdentifier=FLOW_ID,
-                                              inputs=[{'content': {'document': msg.text},
-                                                       'nodeName': 'FlowInputNode',
-                                                       'nodeOutputName': 'document'}])
+        response_stream = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
+                                                     flowIdentifier=FLOW_ID,
+                                                     inputs=[{'content': {'document': msg.text},
+                                                              'nodeName': 'FlowInputNode',
+                                                              'nodeOutputName': 'document'}])
         msgs = []
-        for event in response:
+        for event in response_stream:
             if event == 'responseStream':
-                for i in response[event]:
+                for i in response_stream['responseStream']:
+                    if 'flowOutputEvent' not in i:
+                        continue
                     document = i.get('flowOutputEvent', {}).get('content', {}).get('document', {})
                     if isinstance(document, dict):
                         if document.get('response_type', '') == 'spa_availability':
@@ -101,15 +101,15 @@ async def respond_with_flow(msg: TextMessage,
                                                              f'please contact the hotel reception to check '
                                                              f'other options.'))
                             else:
-                                msgs.append(TextMessage(text=f'Here are the available Spa slots for {day}:\n\n\t· ' +
-                                                             '\n\t· '.join(slots) + '\n\n'
-                                                             'Please call the hotel reception to book your session.'))
+                                rows = [Row(id=slot, title=slot) for slot in slots]
+                                msgs.append(InteractiveListMessage(header='Hotel Spa',
+                                                                   body='Please, choose your desired Spa slot',
+                                                                   button='Available slots',
+                                                                   sections=[Section(title=f'{day}', rows=rows)]))
                         else:
                             print(f'ERROR: Cannot interpret backend message: "{document}"')
                     elif isinstance(document, str):
-                        msgs.append(TextMessage(text=f'There are no available Spa slots for the {day}, '
-                                                     f'please contact the hotel reception to check '
-                                                     f'other options.'))
+                        msgs.append(TextMessage(text=document))
                     else:
                         print(f'Cannot intepret output from flow "{document}"')
 

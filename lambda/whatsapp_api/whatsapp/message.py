@@ -125,10 +125,13 @@ class Row:
     title: str
     description: str | None = None
 
-    def serialize(self):
-        return {'id': self.id,
-                'title': self.title,
-                'description': self.description}
+    def serialize(self) -> dict:
+        d = {'id': self.id,
+             'title': self.title}
+        if self.description is not None:
+            d['description'] = self.description
+
+        return d
 
 
 @dataclass

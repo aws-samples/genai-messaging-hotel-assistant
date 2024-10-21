@@ -5,8 +5,8 @@ import httpx
 import asyncio
 import logging
 from whatsapp.contact import Contact
-from whatsapp.message import TextMessage
 from whatsapp.application import WhatsAppApplication
+from whatsapp.message import InteractiveListReplyMessage, TextMessage
 from conversation.handler import start_new_conversation, respond_with_flow
 
 # Get global objects we'll use throughout the code
@@ -46,9 +46,12 @@ async def main(event):
                     except ValueError:
                         return {'statusCode': 400, 'body': 'Bad request', 'isBase64Encoded': False}
                     for update in updates:
-                        if not isinstance(update.msg, TextMessage):
+                        if isinstance(update.msg, TextMessage):
+                            await respond_with_flow(update.msg, app=wa, conversation=update.conversation)
+                        elif isinstance(update.msg, InteractiveListReplyMessage):
+                            print(f'I should now parse {update.msg}')
+                        else:
                             logging.error(f'Cannot parse message of type {type(update.msg)}, skipping')
-                        await respond_with_flow(update.msg, app=wa, conversation=update.conversation)
 
                     return {'statusCode': 200, 'body': 'Replied to the contact', 'isBase64Encoded': False}
                 else:

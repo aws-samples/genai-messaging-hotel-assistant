@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from httpx import URL, AsyncClient
@@ -5,7 +6,7 @@ from whatsapp.update import Update
 from whatsapp.contact import Contact
 from whatsapp.conversation import Conversation
 from whatsapp.message import (BaseMessage, InteractiveListReplyMessage, LocationMessage,
-                              MediaMessage, Row, TextMessage)
+                              MediaMessage, Row, TextMessage, InteractiveListMessage)
 
 ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
                        'https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components for details')
@@ -51,12 +52,14 @@ class WhatsAppApplication:
         if conversation is None:
             conversation = self.get_conversations({Contact(whatsapp_id=recipient_id)})
 
-        if isinstance(msg, (TextMessage, LocationMessage)):
+        if isinstance(msg, (InteractiveListMessage, LocationMessage, TextMessage)):
             retval = await self._send_generic_msg(msg, conversation)
         elif isinstance(msg, MediaMessage):
             retval = await self._send_media_msg(msg, conversation)
         else:
             raise NotImplementedError(f'Cannot send message of type {type(msg)}')
+
+        retval.raise_for_status()
 
         # Finally, register the message in the list of conversations
         self._conversations[conversation.frozen_participants].messages.append(Update(sender=self.contact,
@@ -184,9 +187,9 @@ class WhatsAppApplication:
                                                                   text=msg.get('text', {'body': '__INVALID__'}).get(
                                                                       'body', ''))))
                         case 'interactive':
-                            reply_id = msg.get('list_reply', {}).get('id', '__INVALID__')
-                            title = msg.get('list_reply', {}).get('title')
-                            description = msg.get('list_reply', {}).get('description')
+                            reply_id = msg.get('interactive', {}).get('list_reply', {}).get('id', '__INVALID__')
+                            title = msg.get('interactive', {}).get('list_reply', {}).get('title')
+                            description = msg.get('interactive', {}).get('list_reply', {}).get('description')
                             updates.append(Update(sender=sender,
                                                   instant=datetime.fromtimestamp(
                                                       WhatsAppApplication._parseint(msg.get('timestamp', 0))),
