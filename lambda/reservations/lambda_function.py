@@ -9,11 +9,9 @@ table = dynamodb.Table(os.environ.get('DDB_TABLE_NAME', 'spa_reservations'))
 
 
 def handle_event(event, context):
-    http_method = event.get('action', 'GET')
-
-    if http_method == 'GET':
+    if 'flow' in event:
         return get_availability(event)
-    elif http_method == 'POST':
+    elif 'request_type' in event and event['request_type'] == 'booking_request':
         return create_booking(event)
     else:
         return {'statusCode': 400,
@@ -53,12 +51,11 @@ def get_availability(event):
 
 def create_booking(event):
     try:
-        body = json.loads(event['body'])
-        time_slot = body['time_slot']
+        time_slot = event['time_slot']
         reservation_time = datetime.strptime(time_slot, '%Y-%m-%d %H:%M')
-        day = datetime.strptime(time_slot, '%Y-%m-%d %H:%M').date()
-        customer_name = body['customer_name']
-    except (json.JSONDecodeError, KeyError):
+        day = reservation_time.date()
+        customer_id = event['customer_id']
+    except KeyError:
         return {'statusCode': 400,
                 'body': json.dumps('Invalid request body')}
 
@@ -68,10 +65,10 @@ def create_booking(event):
 
     try:
         # Append the reservation to the DDB table
-        response = table.get_item(Key={'date': day})
+        response = table.get_item(Key={'date': day.isoformat()})
         reservations = response.get('Item', {}).get('reservations', {})
-        reservations[time_slot] = customer_name
-        table.put_item(Item={'date': day,
+        reservations[time_slot] = customer_id
+        table.put_item(Item={'date': day.isoformat(),
                              'reservations': reservations,
                              'expiration_date': int((reservation_time + timedelta(hours=1)).timestamp())})
 

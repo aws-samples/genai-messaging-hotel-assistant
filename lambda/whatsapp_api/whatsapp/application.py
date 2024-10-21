@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from httpx import URL, AsyncClient
@@ -13,7 +12,7 @@ ERROR_MSG_MALFORMED = ('Given request body does not conform to spec, see '
 
 
 class WhatsAppApplication:
-    def __init__(self, whatsapp_token: str, whatsapp_id: str, client: AsyncClient, protocol_version: str = 'v20.0'):
+    def __init__(self, whatsapp_token: str, whatsapp_id: str, client: AsyncClient, protocol_version: str = 'v21.0'):
         """
         Application that can be used for talking to the WhatsApp-enable Meta application
 
@@ -24,7 +23,7 @@ class WhatsAppApplication:
         client: Async client to use for communicating with Meta's servers
         protocol_version: WhatsApp API protocol version to use
         """
-        self._base_url = URL(f'https://graph.facebook.com/{protocol_version}/')
+        self._base_url = URL(f'https://graph.facebook.com/{protocol_version}')
         self._client = client
         self._whastapp_id = whatsapp_id
         self._token = whatsapp_token

@@ -11,11 +11,13 @@ from conversation.handler import start_new_conversation, respond_with_flow
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
+lambda_ = boto3.client('lambda')
 WHATSAPP_ID = os.environ.get('WHATSAPP_ID', '__INVALID__')
 WHATSAPP_API_KEY = sm.get_secret_value(SecretId=os.environ.get('WHATSAPP_API_KEY_NAME')).get('SecretString',
                                                                                              '__INVALID__')
 WHATSAPP_API_VERIFY_TOKEN = sm.get_secret_value(SecretId=os.environ.get('WHATSAPP_VERIFY_TOKEN_NAME')).get(
     'SecretString', '__INVALID__')
+RESERVATIONS_LAMBDA_ARN = os.environ.get('RESERVATIONS_LAMBDA_ARN', '__INVALID__')
 
 
 async def main(event):
@@ -40,7 +42,6 @@ async def main(event):
                     return {'statusCode': 200, 'body': 'Conversation started with contact', 'isBase64Encoded': False}
                 elif payload.get('object') == 'whatsapp_business_account':
                     # Handle WhatsApp webhook requests
-                    print(payload)
                     try:
                         updates = wa.parse_request(payload)
                     except ValueError:
@@ -49,7 +50,20 @@ async def main(event):
                         if isinstance(update.msg, TextMessage):
                             await respond_with_flow(update.msg, app=wa, conversation=update.conversation)
                         elif isinstance(update.msg, InteractiveListReplyMessage):
-                            print(f'I should now parse {update.msg}')
+                            recipient_id = (update.conversation.participants - {wa.contact}).pop().whatsapp_id
+                            time_slot = update.msg.reply.id
+                            payload = json.dumps({'request_type': 'booking_request',
+                                                  'time_slot': time_slot,
+                                                  'customer_id': recipient_id})
+                            response = lambda_.invoke(FunctionName=RESERVATIONS_LAMBDA_ARN, Payload=payload.encode())
+                            if response['StatusCode'] == 200:
+                                await wa.send_msg(TextMessage(text=f'Thank you. Your reservation for the Spa on '
+                                                                   f'{time_slot} is now confirmed.'),
+                                                  conversation=update.conversation)
+                            else:
+                                await wa.send_msg(TextMessage(text=f'Sorry, there was an error booking your slot...'),
+                                                  conversation=update.conversation)
+                                raise RuntimeError(response['FunctionError'])
                         else:
                             logging.error(f'Cannot parse message of type {type(update.msg)}, skipping')
 

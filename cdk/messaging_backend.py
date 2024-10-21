@@ -129,7 +129,8 @@ class MessagingBackend(Construct):
                                                                'WHATSAPP_ID': whatsapp_id.value_as_string,
                                                                'FLOW_ID': assistant_flow_alias.attr_flow_id,
                                                                'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
-                                                               'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name},
+                                                               'WHATSAPP_API_KEY_NAME': whatsapp_secret.secret_name,
+                                                               'RESERVATIONS_LAMBDA_ARN': spa_availability_lambda.function_arn},
                                                            timeout=aws_cdk.Duration.seconds(30),
                                                            role=whatsapp_lambda_role,
                                                            log_retention=logs.RetentionDays.THREE_DAYS)
