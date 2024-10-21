@@ -20,7 +20,7 @@ def handle_event(event, context):
                 'body': json.dumps('Unsupported HTTP method')}
 
 def _get_available_slots(day: date):
-    response = table.get_item(Key={'date': day})
+    response = table.get_item(Key={'date': day.isoformat()})
 
     if 'Item' not in response:
         # If no reservations exist for this date, all slots are available
@@ -40,14 +40,14 @@ def get_availability(event):
                 'body': json.dumps('Date parameter is required')}
     try:
         # Validate date format
-        day = datetime.strptime(day, '%Y-%m-%d')
+        day = datetime.strptime(day, '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return {'statusCode': 400,
                 'body': json.dumps('Invalid date format. Use YYYY-MM-DD')}
 
     return {'statusCode': 200,
             'body': {'response_type': 'spa_availability',
-                     'date': day,
+                     'date': day.isoformat(),
                      'available_slots': _get_available_slots(day)}}
 
 
