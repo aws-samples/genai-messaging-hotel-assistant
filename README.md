@@ -5,10 +5,6 @@ This repo implements a CDK stack that leverages CDK
 [constructs](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_bedrock.CfnKnowledgeBase.html) 
 to create a WhatsApp & Telegram GenAI-powered hotel concierge for a fictitious AnyCompany Luxury Resort.
 
-The code implements a bot that leverages [Webhooks](https://core.telegram.org/bots/api#setwebhook)
-for compatibility with other messaging platforms to assist hotel customers with information regarding their stay
-in a hotel.
-
 The code is also a good example of how to create [Bedrock Prompt Flows](https://aws.amazon.com/bedrock/prompt-flows/) 
 completely with CDK that you can use as a base for other implementations.
 
