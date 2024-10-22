@@ -1,5 +1,6 @@
 from pathlib import Path
-from datetime import date
+from random import randint
+from datetime import date, timedelta
 from bookings.hotels import Hotel, Location
 from bookings.guests import Guest, MemberType
 from bookings.reservations import Reservation
@@ -34,13 +35,12 @@ def get_reservations_by_chat_id(name: str | None = None) -> list[Reservation]:
                                       birth_date=date(year=1984, month=6, day=2),
                                       member_level=MemberType.GOLD,
                                       chat_id=114649997)],
-                        start_date=date(year=2024, month=10, day=23),
-                        end_date=date(year=2024, month=10, day=30),
-                        room_number=126)]
+                        start_date=date.today(),
+                        end_date=date.today() + timedelta(days=randint(3, 7)),
+                        room_number=randint(42, 215))]
 
 
-def get_chatbot_session_attrs(chat_id: int,
-                              main_guest_name: str | None = None) -> dict[str, str]:
+def get_chatbot_session_attrs(main_guest_name: str | None = None) -> dict[str, str]:
     """
     Get the session attributes for the reservation in a format suitable to be used by Bedrock Agents
     """
@@ -50,7 +50,6 @@ def get_chatbot_session_attrs(chat_id: int,
         return {}
 
     # Get the first reservation available
-    # TODO: this might be in the past!
     reservation = sorted(reservations, key=lambda r: r.start_date)[0]
 
     return {'mainGuestName': main_guest_name,

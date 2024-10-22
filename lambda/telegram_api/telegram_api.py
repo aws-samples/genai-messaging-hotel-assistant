@@ -108,8 +108,7 @@ async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> Non
 
     # Get the session attributes. I guess I could send these only once, but since
     # the lambda is stateless I have no good way of knowing if I have already sent them
-    session_attrs = get_chatbot_session_attrs(chat_id=update.message.from_user.id,
-                                              main_guest_name=update.message.from_user.first_name)
+    session_attrs = get_chatbot_session_attrs(main_guest_name=update.message.from_user.first_name)
 
     for _ in range(2):
         response = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
