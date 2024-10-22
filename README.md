@@ -3,14 +3,14 @@
 This repo implements a CDK stack that leverages CDK 
 [L1](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_bedrock.CfnAgent.html) 
 [constructs](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_bedrock.CfnKnowledgeBase.html) 
-to create a Telegram Bot for handling GenAI-powered interactions with a hotel guest.
+to create a WhatsApp & Telegram GenAI-powered hotel concierge for a fictitious AnyCompany Luxury Resort.
 
-The code implements a Telegram bot that leverages [Webhooks](https://core.telegram.org/bots/api#setwebhook)
+The code implements a bot that leverages [Webhooks](https://core.telegram.org/bots/api#setwebhook)
 for compatibility with other messaging platforms to assist hotel customers with information regarding their stay
 in a hotel.
 
-The code is also a good example of how to create a Bedrock Agent completely with CDK that you can use as a
-base for other implementations. 
+The code is also a good example of how to create [Bedrock Prompt Flows](https://aws.amazon.com/bedrock/prompt-flows/) 
+completely with CDK that you can use as a base for other implementations.
 
 # Architecture
 
@@ -168,7 +168,7 @@ book a Spa session directly from WhatsApp, which is recorded in a DynamoDB table
 
 # References
 
-[This project](https://github.com/build-on-aws/building-gen-ai-whatsapp-assistant-with-amazon-bedrock-and-python)
+[This other project](https://github.com/build-on-aws/building-gen-ai-whatsapp-assistant-with-amazon-bedrock-and-python)
 exposes LangChain agents using Whatsapp. It provides more chat-related functionality, while this project provides more
 thorough infrastructure as code foundation. Go check it out!
 
@@ -177,3 +177,6 @@ thorough infrastructure as code foundation. Go check it out!
 This code interacts with Telegram Bot API which has terms published at https://telegram.org/tos/bot-developers.
 You should confirm that your use case complies with the terms before proceeding. It also interacts with the WhatsApp
 API, which you must agree to when creating your Application in Meta's Developer portal.
+
+The code is provided as a sample and extra stability and security work should be done at the code & architecture 
+levels to evolve it to be usable in production environments.
