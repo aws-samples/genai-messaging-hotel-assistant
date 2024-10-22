@@ -140,9 +140,11 @@ development status you will only be able to write to registered phone numbers.
 
 As a convenience, the API deployed by this solution implements a POST endpoint that you can use to start a new dummy
 conversation. You do that by sending a POST request to the endpoint provided by `cdk` as an output 
-(search for `HotelAssistant.GenAIAssistantMessagingAPIEndpoint`). Please, be advised that this endpoint is not 
-protected. For development/demo purposes this can be fine since WhatsApp will only allow you to start a conversation
-with registered phone numbers but is by no means an acceptable practice for a production system.
+(search for `HotelAssistant.GenAIAssistantMessagingAPIEndpoint`).
+
+Please, be advised that this endpoint is not protected. For development/demo purposes this might be fine since 
+WhatsApp will only allow you to start a conversation with registered phone numbers but is by no means an 
+acceptable practice for a production system.
 
 ```bash
 curl -X POST "${API_ENDPOINT}/whatsapp" \
