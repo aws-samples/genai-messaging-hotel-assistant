@@ -40,7 +40,7 @@ def get_reservations_by_chat_id(name: str | None = None) -> list[Reservation]:
                         room_number=randint(42, 215))]
 
 
-def get_chatbot_session_attrs(main_guest_name: str | None = None) -> dict[str, str]:
+def get_chatbot_session_attrs(main_guest_name: str | None = None) -> dict[str, str | int]:
     """
     Get the session attributes for the reservation in a format suitable to be used by Bedrock Agents
     """
@@ -57,5 +57,7 @@ def get_chatbot_session_attrs(main_guest_name: str | None = None) -> dict[str, s
             'roomNumber': f'{reservation.room_number}',
             'checkInDate': reservation.start_date.isoformat(),
             'checkoutDate': reservation.end_date.isoformat(),
+            'numAdultGuests': len([g.name for g in reservation.guests if not g.is_minor]),
             'adultGuests': ', '.join([g.name for g in reservation.guests if not g.is_minor]),
+            'numMinorGuests': len([g.name for g in reservation.guests if g.is_minor]),
             'minorGuests': ', '.join([g.name for g in reservation.guests if g.is_minor])}
