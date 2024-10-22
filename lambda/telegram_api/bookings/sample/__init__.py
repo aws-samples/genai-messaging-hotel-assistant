@@ -5,7 +5,7 @@ from bookings.guests import Guest, MemberType
 from bookings.reservations import Reservation
 
 # Create some sample data
-sample_hotel = Hotel(name='Costa Tartessos Luxury Resort',
+sample_hotel = Hotel(name='AnyCompany Luxury Resort',
                      location=Location(lon=-6.1609661, lat=36.3407887, address='Chiclana de la Frontera, Cádiz'),
                      stars=5,
                      url='https://aws.amazon.com/bedrock/',
@@ -90,8 +90,8 @@ def get_reservations_by_chat_id(chat_id: int | str,
                                       birth_date=date(year=1984, month=6, day=2),
                                       member_level=MemberType.GOLD,
                                       chat_id=114649997)],
-                        start_date=date(year=2024, month=7, day=5),
-                        end_date=date(year=2024, month=7, day=12),
+                        start_date=date(year=2024, month=11, day=5),
+                        end_date=date(year=2024, month=11, day=12),
                         room_number=126)]
 
 
