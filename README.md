@@ -97,12 +97,16 @@ The code in this project is organized as follows:
 
 * [`cdk`](cdk): CDK python code for deploying the infrastructure.
   - [`hotel_assistant.py`](cdk/hotel_assistant.py): Main CDK Stack code
-  - [`hotel_aoss_kb_stack.py`](cdk/aoss_kb_stack.py): An opinionated, easy-to-use, CDK construct that creates
-    the OpenSearch Serverless Collection, S3 deployment, Bedrock Agent & Bedrock knowledge base, all using native
+  - [`aoss_kb_stack.py`](cdk/aoss_kb_stack.py): An opinionated, easy-to-use, CDK construct that creates
+    the OpenSearch Serverless Collection, S3 deployment & Bedrock Knowledge Base, all using native
     CDK L1 constructs. The OpenSearch Serverless Collection Index is, however, created as a Custom resource in this
     stack with the code in the [`collections`](lambda/collections) lambda, since it cannot be created with CDK today.
   - [`messaging_backend.py`](cdk/messaging_backend.py): CDK construct for deploying the API gateway with Lambda
     integration for implementing the telegram webhook backend.
+  - [`assistant_flow.py`](cdk/assistant_flow.py): Creates the Prompt Flow and an alias based on the definition in
+    [`flow_definition.json`](resources/flow_definition.json).
+  - [`reservations.py`](cdk/reservations.py): Deploys the resources for querying and creating new Spa bookings into
+    a DynamoDB table.
 * [`docs`](docs): Folder with documents that will be deployed to S3 when deploying the stack components in
   [`hotel_aoss_kb_stack.py`](cdk/aoss_kb_stack.py).
 * [`lambda`](lambda): Lambda code. All lambdas are implemented in python with container runtimes.
@@ -117,8 +121,8 @@ The code in this project is organized as follows:
     manually as described [above](#setup).
   - [`telegram_api`](lambda/telegram_api): Lambda code for handling the Telegram Webhook requests.
   - [`whatsapp_api`](lambda/whatsapp_api): Lambda code for handling the WhatsApp Webhook requests.
-* [`resources`](resources): Folder with Flow definition resources. Today it contains a text document with
-  the base agent prompt.
+  - [`reservations`](lambda/reservations): Lambda code for handling the Spa reservations in DynamoDB.
+* [`resources`](resources): Folder with Flow definition resources.
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
 
