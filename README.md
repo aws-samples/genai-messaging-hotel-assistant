@@ -127,11 +127,13 @@ The animation below shows an example interaction with the Assistant, where a use
 reservation through a backend-initiated conversation and can then go on to interact with the assistant and even
 book a Spa session directly from WhatsApp, which is recorded in a DynamoDB table.
 
-![An animation showing a fictitious interaction with the hotel assistant through WhatsApp and finally showing how the user-requested reservation is recorded in a DynamoDB table.](img/assistant_demo.webp "Hotel assistant demo animation")
+![An animation showing a fictitious interaction with the hotel assistant through WhatsApp and finally showing how the user-requested reservation is recorded in a DynamoDB table.](img/whatsapp_demo.webp "Hotel assistant demo animation using WhatsApp")
 
 ## Telegram
 
 Use the Telegram application to search for your bot and start a conversation with them.
+
+![An animation showing a fictitious guest starting a conversation with the hotel assistant through Telegram.](img/telegram_demo.webp "Hotel assistant demo animation using Telegram")
 
 ## WhatsApp
 
