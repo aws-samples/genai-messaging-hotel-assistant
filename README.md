@@ -70,7 +70,7 @@ cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsA
 aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query SecretString
 ```
 
-The telegram bot should now be working, you will have to manually configure the 
+At this point the telegram bot should be fully operational. We will now configure the 
 [WhatsApp webhook](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks).
 
 Go to your application in the Facebook developer portal and in the left menu go to WhatsApp > Configuration;
