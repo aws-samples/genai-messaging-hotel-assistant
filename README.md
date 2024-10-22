@@ -123,12 +123,6 @@ The user experience should be simmilar in both Telegram & WhatsApp, with the mai
 it must be the user who initiates the conversation with the bot, whereas in WhatsApp companies can directly message
 customers.
 
-The animation below shows an example interaction with the Assistant, where a user is sent the details of their
-reservation through a backend-initiated conversation and can then go on to interact with the assistant and even
-book a Spa session directly from WhatsApp, which is recorded in a DynamoDB table.
-
-![An animation showing a fictitious interaction with the hotel assistant through WhatsApp and finally showing how the user-requested reservation is recorded in a DynamoDB table.](img/whatsapp_demo.webp "Hotel assistant demo animation using WhatsApp")
-
 ## Telegram
 
 Use the Telegram application to search for your bot and start a conversation with them.
@@ -156,6 +150,12 @@ curl -X POST "${API_ENDPOINT}/whatsapp" \
 # curl -X POST "https://aaaaaaaaaa.execute-api.us-west-2.amazonaws.com/prod/whatsapp" \
 #      -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "recipient_name":"Joseba"}'
 ```
+
+The animation below shows an example interaction with the Assistant, where a user is sent the details of their
+reservation through a backend-initiated conversation and can then go on to interact with the assistant and even
+book a Spa session directly from WhatsApp, which is recorded in a DynamoDB table.
+
+![An animation showing a fictitious interaction with the hotel assistant through WhatsApp and finally showing how the user-requested reservation is recorded in a DynamoDB table.](img/whatsapp_demo.webp "Hotel assistant demo animation using WhatsApp")
 
 # References
 
