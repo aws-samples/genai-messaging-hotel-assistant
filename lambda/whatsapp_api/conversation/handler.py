@@ -14,8 +14,7 @@ async def start_new_conversation(app: WhatsAppApplication,
     """
     # Get the ID of the user who sent the message
     recipient = (conversation.participants - {app.contact}).pop()
-    user_reservations = get_reservations_by_chat_id(recipient.whatsapp_id,
-                                                    fallback_name=recipient.name)
+    user_reservations = get_reservations_by_chat_id(name=recipient.name)
     if len(user_reservations) == 0:
         await app.send_msg(TextMessage(text=f'Thanks for getting in touch with me, '
                                             f'{recipient.name}. I cannot find any '
