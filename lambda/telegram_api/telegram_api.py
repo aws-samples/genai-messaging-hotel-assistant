@@ -38,8 +38,7 @@ async def start(update, _: ContextTypes.DEFAULT_TYPE):
     await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
 
     # Get the ID of the user who sent the message
-    user_reservations = get_reservations_by_chat_id(update.message.from_user.id,
-                                                    fallback_name=update.message.from_user.first_name)
+    user_reservations = get_reservations_by_chat_id(name=update.message.from_user.first_name)
     if len(user_reservations) == 0:
         await update.message.reply_text(f'Thanks for getting in touch with me, '
                                         f'{update.message.from_user.first_name}. I cannot find any '
