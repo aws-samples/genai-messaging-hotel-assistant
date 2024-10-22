@@ -32,22 +32,36 @@ The diagram below describes the current architecture of the solution.
 * [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
 * [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
-* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its API key & Phone ID in WhatsApp > API Setup from the 
-  app page in the Facebook developer portal.
+* [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its Phone ID 
+  in WhatsApp > API Setup from the app page in the Facebook developer portal.
 
 # Setup
 
 Make sure to deploy the stack in an AWS region where Amazon Bedrock with Anthropic Claude 3 Haiku & 
-Cohere Embed Multilingual and Bedrock Agents are available.
+Amazon Titan Embed Text v2 and Bedrock Promp Flows are available.
+
+Telegram API tokens are provided by Botfather and are permanent. WhatsApp makes a distinction between
+development and permanent tokens. The following steps assume you have a development token, WhatsApp will 
+only provide it to you once your WebHook is operational. To sort this out, we will be deploying the stack
+twice:
+* The first deployment will get the WebHook endpoint running with an intentionally invalid WhatsApp key. 
+  This should be enough to be able to configure the WebHook in Meta's App Dashboard and retrieve the 
+  Access Token. There is no impact from doing this since we won't actually be trying to send WhatsApp
+  messages yet.
+  At this point the Telegram bot should be fully operational.
+* The second deployment will update the secret with the udated Access Token. You should also do this when
+  the deployment token is updated. From this point on both the Telegram & WhatsApp bots should be fully
+  operational. 
 
 In the root folder of this repo, run:
 
 ```bash
-# Only run the following if running in Podman, skip it if you're using Docker
-export CDK_DOCKER=podman
-# Deploy providing the API key you got when creating the new Telegram & WhatsApp bots
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="{WHATSAPP_ID}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
-# You can now optionally get the WhatsAppAPIVerifyToken value as follows
+# Optionally run the following if running in Podman, skip it if you're using Docker
+# export CDK_DOCKER=podman
+# Deploy providing the API key you got when creating the new Telegram bot. WHATSAPP_ID is the Phone ID you got before
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="${WHATSAPP_ID}" --parameters WhatsaAppAPIKey="INTENTIONALLY_INVALID_API_KEY"
+# You can now get the WhatsAppAPIVerifyToken value, you will use it for setting up the WhatsApp WebHook
+# You can also get it from AWS Secrets Manager
 aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query SecretString
 ```
 
@@ -56,13 +70,21 @@ The telegram bot should now be working, you will have to manually configure the
 
 Go to your application in the Facebook developer portal and in the left menu go to WhatsApp > Configuration;
 use the value of `HotelAssistant.GenAIAssistantMessagingAPIEndpoint` from the CDK deployment `Outputs` section
-and from the `WhatsAppAPIVerifyToken` secret in AWS Secrets Manager and use them for configuring the WhatsApp
+and from the `WhatsAppAPIVerifyToken` secret that we read earlier and use them for configuring the WhatsApp
 Webhook as shown in the following image.
 
-![A screenshot of the Facebook developer WhatsApp configuration page showing an example of how to configure the webhook for the CDK-deployed solution, with secret fields redacted with black rectangles.](img/whatsapp_webhook_configuration.png "WhatsApp webhook configuration example")
+![A screenshot of the Facebook developer portal WhatsApp configuration page showing an example of how to configure the webhook for the CDK-deployed solution, with secret fields redacted with black rectangles.](img/whatsapp_webhook_configuration.png "WhatsApp webhook configuration example")
 
-After that, the WhatsApp should now be working. You can start a discussion as described [below](#whatsapp).
+You should now be able to generate an API key from the dashboard, as shown below:
 
+![A screenshort of the Facebook developer portal showing the UI for retrieving a development API key, with sensitive data redacted with black rectangles and interesting UI elements highlighted in rectangles with red borders.](img/whatsapp_api_key_retrieval.png "WhatsApp development API key retrieval example")
+
+```bash
+# Deploy again with both correct API keys
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="${WHATSAPP_ID}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
+```
+
+After that, the WhatsApp integration should be working. You can start a discussion as described [below](#whatsapp).
 
 # Code structure
 
@@ -95,17 +117,32 @@ The code in this project is organized as follows:
 * [`app.py`](app.py): Main entrypoint for the code. Won't typically be executed directly but with `cdk` as
   described in the [setup](#setup) section.
 
-# Using the bot
+# Using the Assistant
+
+The user experience should be simmilar in both Telegram & WhatsApp, with the main difference being that in Telegram
+it must be the user who initiates the conversation with the bot, whereas in WhatsApp companies can directly message
+customers.
+
+The animation below shows an example interaction with the Assistant, where a user is sent the details of their
+reservation through a backend-initiated conversation and can then go on to interact with the assistant and even
+book a Spa session directly from WhatsApp, which is recorded in a DynamoDB table.
+
+![An animation showing a fictitious interaction with the hotel assistant through WhatsApp and finally showing how the user-requested reservation is recorded in a DynamoDB table.](img/assistant_demo.webp "Hotel assistant demo animation")
 
 ## Telegram
 
-Search for the Telegram bot and start a conversation with them
+Use the Telegram application to search for your bot and start a conversation with them.
 
 ## WhatsApp
 
 In the case of the WhatsApp bot, it is the bot who should initiate the conversation. If your application is in
-development status you will only be able to write to registered phone numbers. You do that by sending a POST
-request to the endpoint provided by `cdk` as an output (search for `HotelAssistant.GenAIAssistantMessagingAPIEndpoint`).
+development status you will only be able to write to registered phone numbers.
+
+As a convenience, the API deployed by this solution implements a POST endpoint that you can use to start a new dummy
+conversation. You do that by sending a POST request to the endpoint provided by `cdk` as an output 
+(search for `HotelAssistant.GenAIAssistantMessagingAPIEndpoint`). Please, be advised that this endpoint is not 
+protected. For development/demo purposes this can be fine since WhatsApp will only allow you to start a conversation
+with registered phone numbers but is by no means an acceptable practice for a production system.
 
 ```bash
 curl -X POST "${API_ENDPOINT}/whatsapp" \
@@ -125,4 +162,5 @@ thorough infrastructure as code foundation. Go check it out!
 # Appendix
 
 This code interacts with Telegram Bot API which has terms published at https://telegram.org/tos/bot-developers.
-You should confirm that your use case complies with the terms before proceeding.
+You should confirm that your use case complies with the terms before proceeding. It also interacts with the WhatsApp
+API, which you must agree to when creating your Application in Meta's Developer portal.
