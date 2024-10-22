@@ -25,11 +25,16 @@ The diagram below describes the current architecture of the solution.
 
 ![Solution architecture](img/architecture.png)
 
+The assistant relies heavily in [Amazon Bedrock Prompt Flows](https://aws.amazon.com/bedrock/prompt-flows/), the 
+definition for which is stored in [`flow_definition.json`](resources/flow_definition.json) and can be seen below:
+
+![An image showing a diagram of the different nodes configured in the prompt flow and that handle the conversation with the guest differently depending on the user's request.](img/prompt_flow.png "Prompt flow")
+
 # Requirements
 
-* Python 3.12
-* [CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html)
-* [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images
+* Python 3.12.
+* [CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
+* [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images.
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
 * [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
 * [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its Phone ID 
