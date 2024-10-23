@@ -34,25 +34,18 @@ definition for which is stored in [`flow_definition.json`](resources/flow_defini
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
 * [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
 * [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its Phone ID 
-  in WhatsApp > API Setup from the app page in the Facebook developer portal.
+  in WhatsApp > API Setup from the app page in the Facebook developer portal. Also, create a
+  [permanent token](https://developers.facebook.com/blog/post/2022/12/05/auth-tokens/) and keep it for later.
 
 # Setup
 
 Make sure to deploy the stack in an AWS region where Amazon Bedrock with Anthropic Claude 3 Haiku & 
 Amazon Titan Embed Text v2 and Bedrock Promp Flows are available.
 
-Telegram API tokens are provided by Botfather and are permanent. WhatsApp makes a distinction between
-development and permanent tokens. The following steps assume you have a development token, WhatsApp will 
-only provide it to you once your WebHook is operational. To sort this out, we will be deploying the stack
-twice:
-* The first deployment will get the WebHook endpoint running with an intentionally invalid WhatsApp key. 
-  This should be enough to be able to configure the WebHook in Meta's App Dashboard and retrieve the 
-  Access Token. There is no impact from doing this since we won't actually be trying to send WhatsApp
-  messages yet.
-  At this point the Telegram bot should be fully operational.
-* The second deployment will update the secret with the udated Access Token. You should also do this when
-  the deployment token is updated. From this point on both the Telegram & WhatsApp bots should be fully
-  operational. 
+Telegram API tokens are provided by Botfather and are permanent. For WhatsApp, while you can potentially use
+temporary tokens, they are cumbersome to use and force you to deploy this stack twice (as WhatsApp will only
+give you a temporary token once the WebHook is correctly set up), so this guide assumes that you are using a
+permanent token from the [requirements](#requirements) section.
 
 In the root folder of this repo, run:
 
@@ -60,7 +53,7 @@ In the root folder of this repo, run:
 # Optionally run the following if running in Podman, skip it if you're using Docker
 # export CDK_DOCKER=podman
 # Deploy providing the API key you got when creating the new Telegram bot. WHATSAPP_ID is the Phone ID you got before
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="${WHATSAPP_ID}" --parameters WhatsaAppAPIKey="INTENTIONALLY_INVALID_API_KEY"
+cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="${WHATSAPP_ID}" --parameters WhatsaAppAPIKey="${WHATSAPP_PERMANENT_TOKEN}"
 # You can now get the WhatsAppAPIVerifyToken value, you will use it for setting up the WhatsApp WebHook
 # You can also get it from AWS Secrets Manager
 aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query SecretString
@@ -70,20 +63,11 @@ At this point the telegram bot should be fully operational. We will now configur
 [WhatsApp webhook](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks).
 
 Go to your application in the Facebook developer portal and in the left menu go to WhatsApp > Configuration;
-use the value of `HotelAssistant.GenAIAssistantMessagingAPIEndpoint` from the CDK deployment `Outputs` section
-and from the `WhatsAppAPIVerifyToken` secret that we read earlier and use them for configuring the WhatsApp
-Webhook as shown in the following image.
+use the value of `HotelAssistant.GenAIAssistantMessagingAPIEndpoint` followed by `/whatsapp` from the CDK 
+deployment `Outputs` section and the `WhatsAppAPIVerifyToken` secret that we read earlier to configure the 
+WhatsApp Webhook as shown in the following image.
 
 ![A screenshot of the Facebook developer portal WhatsApp configuration page showing an example of how to configure the webhook for the CDK-deployed solution, with secret fields redacted with black rectangles.](img/whatsapp_webhook_configuration.png "WhatsApp webhook configuration example")
-
-You should now be able to generate an API key from the dashboard, as shown below:
-
-![A screenshort of the Facebook developer portal showing the UI for retrieving a development API key, with sensitive data redacted with black rectangles and interesting UI elements highlighted in rectangles with red borders.](img/whatsapp_api_key_retrieval.png "WhatsApp development API key retrieval example")
-
-```bash
-# Deploy again with both correct API keys
-cdk deploy --parameters TelegramAPIKey="${TELEGRAM_API_KEY}" --parameters WhatsAppPhoneID="${WHATSAPP_ID}" --parameters WhatsaAppAPIKey="${WHATSAPP_API_KEY}"
-```
 
 After that, the WhatsApp integration should be working. You can start a discussion as described [below](#whatsapp).
 
@@ -150,10 +134,15 @@ acceptable practice for a production system.
 ```bash
 curl -X POST "${API_ENDPOINT}/whatsapp" \
      -d '{ "object":"new_conversation_request", "recipient_id":"${RECIPIENT_WHATSAPP_ID}", "recipient_name":"${RECIPIENT_NAME}"}'
+```
 
-# Example
-# curl -X POST "https://aaaaaaaaaa.execute-api.us-west-2.amazonaws.com/prod/whatsapp" \
-#      -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "recipient_name":"Joseba"}'
+If you get an `Internal Error` here. check the CloudWatch Logs of the `HotelAssistant-HotelAgentBackendWhatsAppAPI*`
+Lambda function. A successful execution should read 
+
+```bash
+curl -X POST "https://aaaaaaaaaa.execute-api.us-west-2.amazonaws.com/prod/whatsapp" \
+     -d '{ "object":"new_conversation_request", "recipient_id":"346111111111", "recipient_name":"Joseba"}'
+Conversation started with contact
 ```
 
 The animation below shows an example interaction with the Assistant, where a user is sent the details of their
