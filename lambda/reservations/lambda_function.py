@@ -17,31 +17,32 @@ def handle_event(event, context):
         return {'statusCode': 400,
                 'body': json.dumps('Unsupported HTTP method')}
 
+
 def _get_available_slots(day: date):
     response = table.get_item(Key={'date': day.isoformat()})
 
     if 'Item' not in response:
         # If no reservations exist for this date, all slots are available
-        available_slots = generate_all_slots()
+        available_slots = generate_all_slots(day)
     else:
         reserved_slots = response['Item'].get('reservations', {})
-        available_slots = [slot for slot in generate_all_slots() if slot not in reserved_slots]
+        available_slots = [slot for slot in generate_all_slots(day) if slot not in reserved_slots]
 
     return available_slots
 
-def get_availability(event):
-    day = event.get('queryStringParameters', {}).get('date',
-                                                     (date.today() + timedelta(days=1)).isoformat())
 
-    if not day:
-        return {'statusCode': 400,
-                'body': json.dumps('Date parameter is required')}
+def get_availability(event):
+    try:
+        day = event['node']['inputs'][0]['value']
+    except (KeyError, IndexError):
+        day = (date.today() + timedelta(days=1)).isoformat()
+
     try:
         # Validate date format
         day = datetime.strptime(day, '%Y-%m-%d').date()
     except (ValueError, TypeError):
         return {'statusCode': 400,
-                'body': json.dumps('Invalid date format. Use YYYY-MM-DD')}
+                'body': json.dumps('Invalid date format. Use ISO 8601 (YYYY-MM-DD)')}
 
     return {'statusCode': 200,
             'body': {'response_type': 'spa_availability',
@@ -79,13 +80,13 @@ def create_booking(event):
                 'body': json.dumps('This time slot is already booked')}
 
 
-def generate_all_slots(day: date =  datetime.today().date()):
+def generate_all_slots(day: date = date.today()):
     """
     Generate a list with all the valid slots (as ISO-formatted strings) for a particular date
     """
     t0 = datetime(year=day.year, month=day.month, day=day.day)
-    start_time = t0 + timedelta(days=1, hours=9)
-    end_time = t0 + timedelta(days=1, hours=16)
+    start_time = t0 + timedelta(hours=9)
+    end_time = t0 + timedelta(hours=16)
     time_slots = []
 
     current_time = start_time

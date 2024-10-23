@@ -1,9 +1,10 @@
+import json
 from datetime import date
 from bookings.guests import MemberType
 from whatsapp.conversation import Conversation
 from whatsapp.application import WhatsAppApplication
 from . import agents_runtime, FLOW_ID, FLOW_ALIAS_ID
-from bookings.sample import get_reservations_by_chat_id
+from bookings.sample import get_reservations_by_chat_id, get_chatbot_session_attrs
 from whatsapp.message import ImageMessage, InteractiveListMessage, LocationMessage, Row, Section, TextMessage
 
 
@@ -78,10 +79,16 @@ async def respond_with_flow(msg: TextMessage,
     """
     Process a normal user message using the given Bedrock Agent
     """
+    # Get the session attributes. I guess I could send these only once, but since
+    # the lambda is stateless I have no good way of knowing if I have already sent them
+    recipient = (conversation.participants - {app.contact}).pop()
+    details = get_chatbot_session_attrs(main_guest_name=recipient.name)
     for _ in range(2):
         response_stream = agents_runtime.invoke_flow(flowAliasIdentifier=FLOW_ALIAS_ID,
                                                      flowIdentifier=FLOW_ID,
-                                                     inputs=[{'content': {'document': msg.text},
+                                                     inputs=[{'content': {'document': json.dumps({'query': msg.text,
+                                                                                                  'reservation_details': json.dumps(
+                                                                                                      details)})},
                                                               'nodeName': 'FlowInputNode',
                                                               'nodeOutputName': 'document'}])
         msgs = []
