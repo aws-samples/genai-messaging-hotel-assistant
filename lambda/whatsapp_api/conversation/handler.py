@@ -3,7 +3,7 @@ from datetime import date
 from bookings.guests import MemberType
 from whatsapp.conversation import Conversation
 from whatsapp.application import WhatsAppApplication
-from . import agents_runtime, FLOW_ID, FLOW_ALIAS_ID
+from conversation import agents_runtime, FLOW_ID, FLOW_ALIAS_ID
 from bookings.sample import get_reservations_by_chat_id, get_chatbot_session_attrs
 from whatsapp.message import ImageMessage, InteractiveListMessage, LocationMessage, Row, Section, TextMessage
 
@@ -43,12 +43,9 @@ async def start_new_conversation(app: WhatsAppApplication,
             msg += f'  • {n} minors ({", ".join([g.name for g in reservation.guests if g.is_minor])})\n'
     # Send the main message
     if reservation.hotel.poster is None:
-        await app.send_msg(TextMessage(text=msg),
-                           conversation=conversation)
+        await app.send_msg(TextMessage(text=msg), conversation=conversation)
     else:
-        await app.send_msg(ImageMessage(media=reservation.hotel.poster,
-                                        media_name='poster.jpg',
-                                        caption=msg),
+        await app.send_msg(ImageMessage(media=reservation.hotel.poster, media_name='poster.jpg', caption=msg),
                            conversation=conversation)
 
     # Send the hotel location as a reply to the main message

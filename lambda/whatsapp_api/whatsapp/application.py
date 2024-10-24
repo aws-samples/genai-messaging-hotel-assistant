@@ -144,8 +144,6 @@ class WhatsAppApplication:
                 # metadata contains the info for the bot
                 if 'metadata' not in changes:
                     raise ValueError(ERROR_MSG_MALFORMED)
-                recipient = changes.get('metadata', {'display_phone_number': '__INVALID__'})['display_phone_number']
-                recipient_id = changes.get('metadata', {'phone_number_id': '__INVALID__'})['phone_number_id']
                 # Ignore status change (read notification) messages
                 if 'statuses' in changes:
                     logging.debug(f'Skipping status message changes {changes}')
@@ -180,9 +178,6 @@ class WhatsAppApplication:
                                                       WhatsAppApplication._parseint(msg.get('timestamp', 0))),
                                                   conversation=conversation,
                                                   msg=TextMessage(msg_id=msg.get('id', '__INVALID__'),
-                                                                  date=datetime.fromtimestamp(
-                                                                      WhatsAppApplication._parseint(
-                                                                          msg.get('timestamp', 0))),
                                                                   text=msg.get('text', {'body': '__INVALID__'}).get(
                                                                       'body', ''))))
                         case 'interactive':

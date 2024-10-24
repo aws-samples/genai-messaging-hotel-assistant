@@ -68,6 +68,7 @@ def handle_event(event, context):
     Parameters
     ----------
     event : Event information
+    context : Context information for the Lambda invocation
     """
     # Ignore all non-create events
     if event['RequestType'] != 'Create':

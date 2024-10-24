@@ -35,14 +35,12 @@ def handle_event(event, context):
     """
     Handle the Custom Resource events from CDK.
 
-    In practice, it will only create the index in the Collection provided in the event ResourceProperties
-
-    This lambda expects the Collection to be created already, but will wait for it
-    to be available if status is 'CREATING'
+    In practice, it will configure the Telegram bot Webhook as defined in ResourceProperties
 
     Parameters
     ----------
     event : Event information
+    context : Context information for the Lambda invocation
     """
     # Ignore all non-create events
     if event['RequestType'] != 'Create':

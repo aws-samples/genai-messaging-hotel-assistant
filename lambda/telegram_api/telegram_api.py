@@ -19,7 +19,7 @@ FLOW_ID = os.environ.get('FLOW_ID', '__INVALID__')
 FLOW_ALIAS_ID = os.environ.get('FLOW_ALIAS_ID', '__INVALID__')
 
 
-async def handle_telegram_msg(telegram_app, body):
+async def handle_telegram_msg(telegram_app: telegram.ext.Application, body: str):
     try:
         req = json.loads(body)
     except BaseException as e:

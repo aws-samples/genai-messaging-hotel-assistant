@@ -1,9 +1,8 @@
 import json
 import mimetypes
 from enum import Enum
-from datetime import datetime
+from dataclasses import dataclass
 from whatsapp.contact import Contact
-from dataclasses import dataclass, field
 
 
 class Status(Enum):
@@ -29,7 +28,6 @@ class BaseMessage:
 @dataclass(kw_only=True)
 class TextMessage(BaseMessage):
     text: str
-    date: datetime = field(default_factory=datetime.now)
     msg_id: str = ''
     preview_links: bool = True
 
@@ -65,10 +63,7 @@ class MediaMessage(BaseMessage):
 @dataclass(kw_only=True)
 class ImageMessage(MediaMessage):
     caption: str = ''
-    date: datetime = field(default_factory=datetime.now)
     msg_id: str = ''
-    recipient: str = ''
-    sender: str = ''
 
     def serialize(self, recipient: Contact) -> dict[str: str | int]:
         """
