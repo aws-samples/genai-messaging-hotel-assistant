@@ -102,8 +102,3 @@ def generate_all_slots(day: date = date.today()):
         current_time += timedelta(hours=1)
 
     return time_slots
-
-
-if __name__ == '__main__':
-   create_booking({'time_slot': '2024-10-30 10:00',
-                   'customer_id': '1234'})
