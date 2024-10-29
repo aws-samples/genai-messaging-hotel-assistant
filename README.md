@@ -11,8 +11,9 @@ that same chat to ask the concierge questions about the hotel and its amenities,
 and to check and book slots at the hotel Spa.
 
 Please note that the bot will handle two types or reservations:
-* Hotel reservations. These are populated with random values every time the user interacts with them and assigned
-  to the user's WahtsApp/Telegram contact name. The details are not saved anywhere.
+* Hotel reservations. These are populated with random values every time the bot reads them and are assigned
+  to the user's WahtsApp/Telegram contact name. The details are not saved anywhere, which means that you 
+  *will intentionally* get two different checkout dates if you ask the bot twice.
 * Spa reservations. For each reservation either the
   [Telegram user ID](https://docs.python-telegram-bot.org/en/v21.6/telegram.user.html#telegram.User) or the
   [WhatsApp phone number](https://developers.facebook.com/docs/whatsapp/cloud-api/messages/text-messages) is stored
