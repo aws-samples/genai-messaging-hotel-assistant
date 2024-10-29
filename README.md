@@ -5,6 +5,21 @@ This repo implements a CDK stack that leverages CDK
 [constructs](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_bedrock.CfnKnowledgeBase.html) 
 to create a WhatsApp & Telegram GenAI-powered hotel concierge for a fictitious AnyCompany Luxury Resort.
 
+The concierge is used to implement a fictitious user experience where the guest is greeted a few hours before
+their stay and provided with the basic reservation details through WhatsApp or Telegram and the user can use
+that same chat to ask the concierge questions about the hotel and its amenities, the guest's hotel reservation
+and to check and book slots at the hotel Spa.
+
+Please note that the bot will handle two types or reservations:
+* Hotel reservations. These are populated with random values every time the user interacts with them and assigned
+  to the user's WahtsApp/Telegram contact name. The details are not saved anywhere.
+* Spa reservations. For each reservation either the
+  [Telegram user ID](https://docs.python-telegram-bot.org/en/v21.6/telegram.user.html#telegram.User) or the
+  [WhatsApp phone number](https://developers.facebook.com/docs/whatsapp/cloud-api/messages/text-messages) is stored
+  in a DynamoDB table in your AWS account. These entries are created with a TTL so that they are deleted shortly
+  after the booked time slot is reached. While the general Spa availability is checked in this DynamoDB table, the
+  solution does not yet implement a way for a user to retrieve/modify/delete their own Spa slots.
+
 The code is also a good example of how to create [Bedrock Prompt Flows](https://aws.amazon.com/bedrock/prompt-flows/) 
 completely with CDK that you can use as a base for other implementations.
 
@@ -13,7 +28,7 @@ completely with CDK that you can use as a base for other implementations.
 The solution relies on two main components:
 * An Amazon Bedrock agent powered by Anthropic Claude Haiku + Cohere Embed Multilingual for handling
   the conversations.
-* An [API Gateway](https://aws.amazon.com/api-gateway/) powered by the lambda code defined in
+* An [API Gateway](https://aws.amazon.com/api-gateway/) powered by the AWS Lambda code defined in
   [`telegram_api`](lambda/telegram_api) & [`whatsapp_api`](lambda/whatsapp_api) that handles Telegram & WhatsApp Webhook requests and, 
   using the Bedrock Agent, answers the user's requests.
 
@@ -32,7 +47,7 @@ definition for which is stored in [`flow_definition.json`](resources/flow_defini
 * [CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html).
 * [Docker](https://www.docker.com/) or [Podman](https://podman.io/) for compiling the container images.
 * The requirements in [`requirements.txt`](requirements.txt) and in each individual lambda code folder.
-* [A new Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
+* [A Telegram bot](https://core.telegram.org/bots/tutorial); note its API key as provided by Botfather.
 * [A WhatsApp app](https://developers.facebook.com/docs/whatsapp/cloud-api/get-started); note its Phone ID 
   in WhatsApp > API Setup from the app page in the Facebook developer portal. Also, create a
   [permanent token](https://developers.facebook.com/blog/post/2022/12/05/auth-tokens/) and keep it for later.
