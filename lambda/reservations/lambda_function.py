@@ -30,7 +30,7 @@ def _get_available_slots(day: date):
 
     # If there are no available slots, try the following day
     if len(available_slots) < 3:
-        return available_slots + _get_available_slots(day = day + timedelta(days=1))
+        return available_slots + _get_available_slots(day=day + timedelta(days=1))
 
     return available_slots
 
@@ -73,9 +73,11 @@ def create_booking(event):
         response = table.get_item(Key={'date': day.isoformat()})
         reservations = response.get('Item', {}).get('reservations', {})
         reservations[time_slot] = customer_id
+        # Determine the maximum TTL that we should apply to this day, then register the booking
+        ttl = max([int(datetime.strptime(ttl, '%Y-%m-%d %H:%M').timestamp()) for ttl in reservations.keys()])
         table.put_item(Item={'date': day.isoformat(),
                              'reservations': reservations,
-                             'expiration_date': int((reservation_time + timedelta(hours=1)).timestamp())})
+                             'expiration_date': ttl})
 
         return {'statusCode': 200,
                 'body': json.dumps('Booking created successfully')}
@@ -100,3 +102,8 @@ def generate_all_slots(day: date = date.today()):
         current_time += timedelta(hours=1)
 
     return time_slots
+
+
+if __name__ == '__main__':
+   create_booking({'time_slot': '2024-10-30 10:00',
+                   'customer_id': '1234'})
