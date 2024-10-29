@@ -28,6 +28,10 @@ def _get_available_slots(day: date):
         reserved_slots = response['Item'].get('reservations', {})
         available_slots = [slot for slot in generate_all_slots(day) if slot not in reserved_slots]
 
+    # If there are no available slots, try the following day
+    if len(available_slots) < 3:
+        return available_slots + _get_available_slots(day = day + timedelta(days=1))
+
     return available_slots
 
 
@@ -91,7 +95,8 @@ def generate_all_slots(day: date = date.today()):
 
     current_time = start_time
     while current_time < end_time:
-        time_slots.append(current_time.strftime('%Y-%m-%d %H:%M'))
+        if current_time >= datetime.now() + timedelta(minutes=10):
+            time_slots.append(current_time.strftime('%Y-%m-%d %H:%M'))
         current_time += timedelta(hours=1)
 
     return time_slots
