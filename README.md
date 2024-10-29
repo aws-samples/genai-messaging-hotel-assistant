@@ -78,10 +78,11 @@ aws secretsmanager get-secret-value --secret-id WhatsAppAPIVerifyToken --query S
 At this point the telegram bot should be fully operational. We will now configure the 
 [WhatsApp webhook](https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks).
 
-Go to your application in the Facebook developer portal and in the left menu go to WhatsApp > Configuration;
+Go to your application in the Meta's App Dashboard and in the left menu go to WhatsApp > Configuration;
 use the value of `HotelAssistant.GenAIAssistantMessagingAPIEndpoint` followed by `/whatsapp` from the CDK 
 deployment `Outputs` section and the `WhatsAppAPIVerifyToken` secret that we read earlier to configure the 
-WhatsApp Webhook as shown in the following image.
+WhatsApp Webhook as shown in the following image, then click on the `Verify and save` button. On the same
+page, be sure to enable the subscription toggle for the `messages` webhook field.
 
 ![A screenshot of the Facebook developer portal WhatsApp configuration page showing an example of how to configure the webhook for the CDK-deployed solution, with secret fields redacted with black rectangles.](img/whatsapp_webhook_configuration.png "WhatsApp webhook configuration example")
 
