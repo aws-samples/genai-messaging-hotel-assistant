@@ -63,7 +63,9 @@ async def main(event):
                                                                    f'{time_slot} is now confirmed.'),
                                                   conversation=update.conversation)
                             else:
-                                await wa.send_msg(TextMessage(text=f'Sorry, there was an error booking your slot...'),
+                                await wa.send_msg(TextMessage(text='Sorry, there was an error booking your slot. '
+                                                                   'Please get in touch with the hotel reception to '
+                                                                   'book your Spa session.'),
                                                   conversation=update.conversation)
                                 raise RuntimeError(response['FunctionError'])
                         else:
