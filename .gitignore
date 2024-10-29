@@ -161,11 +161,15 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 .DS_Store
+qodana.yaml
 
 # Office documents
 *.pptx
 *.docx
+*.gif
+*.webp
 
-# CDK working directories
+# CDK working directories
 cdk.out
+
 
