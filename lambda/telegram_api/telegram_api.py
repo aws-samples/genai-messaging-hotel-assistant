@@ -7,16 +7,19 @@ from datetime import date
 import telegram.constants
 from bookings.guests import MemberType
 from telegram.ext._contexttypes import ContextTypes
-from telegram import Update, InputMediaDocument, InputMediaPhoto
 from bookings.sample import get_reservations_by_chat_id, get_chatbot_session_attrs
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters, \
+    CallbackContext
+from telegram import Update, InputMediaDocument, InputMediaPhoto, InlineKeyboardButton, InlineKeyboardMarkup
 
 # Get global objects we'll use throughout the code
 sm = boto3.client('secretsmanager')
+lambda_ = boto3.client('lambda')
 TELEGRAM_API_KEY = sm.get_secret_value(SecretId=os.environ.get('SECRET_NAME')).get('SecretString', '__INVALID__')
 agents_runtime = boto3.client('bedrock-agent-runtime')
 FLOW_ID = os.environ.get('FLOW_ID', '__INVALID__')
 FLOW_ALIAS_ID = os.environ.get('FLOW_ALIAS_ID', '__INVALID__')
+RESERVATIONS_LAMBDA_ARN = os.environ.get('RESERVATIONS_LAMBDA_ARN', '__INVALID__')
 
 
 async def handle_telegram_msg(telegram_app: telegram.ext.Application, body: str):
@@ -32,7 +35,7 @@ async def handle_telegram_msg(telegram_app: telegram.ext.Application, body: str)
 
 
 # Example handler
-async def start(update, _: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     """Introduce ourselves and present reservation info on /start message."""
     # Set the typing indicator
     await update.message.chat.send_chat_action(telegram.constants.ChatAction.TYPING)
@@ -99,6 +102,34 @@ async def start(update, _: ContextTypes.DEFAULT_TYPE):
                                                    reply_to_message_id=main_msg.message_id)
 
 
+async def respond_callback(update: Update, _: CallbackContext) -> None:
+    """
+    Respond to message callbacks.
+
+    We will typically get these when the user is answering to Spa booking slot requests.
+    Please note that this method does not check for the validity of the provided timeslot.
+    """
+    time_slot = update.callback_query.data
+    recipient_id = f'{update.callback_query.from_user.id}'
+    payload = json.dumps({'request_type': 'booking_request',
+                          'time_slot': time_slot,
+                          'customer_id': recipient_id})
+    response = lambda_.invoke(FunctionName=RESERVATIONS_LAMBDA_ARN, Payload=payload.encode())
+    if response['StatusCode'] == 200:
+        # Try to remove the inline keyboard so that the user can only book a single Spa slot,
+        # this is not guaranteed to work
+        await update.callback_query.message.edit_reply_markup(None)
+        await update.callback_query.message.edit_text(f'[This mesage contained the available Spa slots]')
+        await update.callback_query.message.reply_text(f'Thank you. Your reservation for the Spa on '
+                                                       f'{time_slot} is now confirmed.')
+    else:
+        await update.callback_query.message.reply_text('Sorry, there was an error booking your slot. Please get in '
+                                                       'touch with the hotel reception to book your Spa session.')
+        raise RuntimeError(response['FunctionError'])
+
+    return
+
+
 async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Process a normal user message using the given Bedrock Agent
@@ -131,9 +162,13 @@ async def respond_with_flow(update: Update, _: ContextTypes.DEFAULT_TYPE) -> Non
                                 completion += (f'There are no available Spa slots for the {day}, please contact '
                                                'the hotel reception to check other options.')
                             else:
-                                completion += (f'Here are the available Spa slots for {day}:\n\n\t· ' +
-                                               '\n\t· '.join(slots) +
-                                               '\n\nPlease call the hotel reception to book your session.')
+                                keyboard = [[InlineKeyboardButton(slot, callback_data=slot)] for slot in slots]
+                                reply_markup = InlineKeyboardMarkup(keyboard)
+                                await update.message.reply_text('<b>Please, choose your desired Spa slot:</b>',
+                                                                parse_mode='HTML',
+                                                                reply_markup=reply_markup)
+
+                                return
                         else:
                             print(f'ERROR: Cannot interpret backend message: "{document}"')
                     elif isinstance(document, str):
@@ -159,6 +194,7 @@ async def main(event):
     await telegram_app.initialize()
     # Set the Telegram handlers for the commands and regular text messages
     telegram_app.add_handler(CommandHandler('start', start))
+    telegram_app.add_handler(CallbackQueryHandler(respond_callback))
     telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, respond_with_flow))
 
     # Handle the different cases
@@ -171,6 +207,4 @@ async def main(event):
 
 
 def handler(event, _):
-    logging.error(event)
-
     return asyncio.run(main(event))

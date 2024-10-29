@@ -101,7 +101,8 @@ class MessagingBackend(Construct):
                                                            architecture=lambda_architecture,
                                                            environment={'FLOW_ID': assistant_flow_alias.attr_flow_id,
                                                                         'FLOW_ALIAS_ID': assistant_flow_alias.attr_id,
-                                                                        'SECRET_NAME': telegram_secret.secret_name},
+                                                                        'SECRET_NAME': telegram_secret.secret_name,
+                                                                        'RESERVATIONS_LAMBDA_ARN': spa_availability_lambda.function_arn},
                                                            timeout=aws_cdk.Duration.seconds(30),
                                                            role=telegram_lambda_role,
                                                            log_retention=logs.RetentionDays.THREE_DAYS)
