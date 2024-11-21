@@ -79,10 +79,3 @@ async def main(event):
 
 def handler(event, _):
     return asyncio.run(main(event))
-
-
-if __name__ == '__main__':
-    payload = json.dumps({ "object":"new_conversation_request", "recipient_id":"+34617997469", "recipient_name":"Joseba"})
-    event = {'body': payload,
-             'requestContext': {'httpMethod': 'POST'}}
-    handler(event, None)
