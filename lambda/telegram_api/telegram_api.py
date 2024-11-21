@@ -23,6 +23,19 @@ RESERVATIONS_LAMBDA_ARN = os.environ.get('RESERVATIONS_LAMBDA_ARN', '__INVALID__
 
 
 async def handle_telegram_msg(telegram_app: telegram.ext.Application, body: str):
+    """
+    Handle incoming Telegram messages by parsing the request body and processing the update.
+
+    Args:
+        telegram_app: The Telegram application instance
+        body: The raw request body containing the Telegram update data
+
+    Returns:
+        The result of processing the Telegram update
+
+    Raises:
+        Returns 400 status code if request body cannot be parsed
+    """
     try:
         req = json.loads(body)
     except BaseException as e:

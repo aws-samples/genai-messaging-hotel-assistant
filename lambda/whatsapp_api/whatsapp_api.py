@@ -45,7 +45,8 @@ async def main(event):
                     try:
                         updates = wa.parse_request(payload)
                     except NotImplementedError:
-                        return {'statusCode': 200, 'body': 'Ignoring unsupported message type', 'isBase64Encoded': False}
+                        return {'statusCode': 200, 'body': 'Ignoring unsupported message type',
+                                'isBase64Encoded': False}
                     except ValueError:
                         return {'statusCode': 400, 'body': 'Bad request', 'isBase64Encoded': False}
                     for update in updates:
@@ -78,3 +79,10 @@ async def main(event):
 
 def handler(event, _):
     return asyncio.run(main(event))
+
+
+if __name__ == '__main__':
+    payload = json.dumps({ "object":"new_conversation_request", "recipient_id":"+34617997469", "recipient_name":"Joseba"})
+    event = {'body': payload,
+             'requestContext': {'httpMethod': 'POST'}}
+    handler(event, None)
