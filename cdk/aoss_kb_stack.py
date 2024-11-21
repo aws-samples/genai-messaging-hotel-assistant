@@ -92,6 +92,7 @@ class AOSSKB(Construct):
                                                       description='Hotel Assistant Embeddings Store',
                                                       standby_replicas='DISABLED',
                                                       type='VECTORSEARCH')
+        self.collection.apply_removal_policy(policy=RemovalPolicy.DESTROY)
         encryption_policy_document = json.dumps({'Rules': [{'ResourceType': 'collection',
                                                             'Resource': [f'collection/{self.collection.name}']}],
                                                  'AWSOwnedKey': True},
@@ -101,6 +102,7 @@ class AOSSKB(Construct):
                                                             name='assistant-col-encryption-policy',
                                                             type='encryption',
                                                             policy=encryption_policy_document)
+        encryption_policy.apply_removal_policy(RemovalPolicy.DESTROY)
         self.collection.add_dependency(encryption_policy)
         network_policy_document = json.dumps([{'Rules': [{'Resource': [f'collection/{self.collection.name}'],
                                                           'ResourceType': 'dashboard'},
@@ -112,6 +114,7 @@ class AOSSKB(Construct):
                                                          name='assistant-col-network-policy',
                                                          type='network',
                                                          policy=network_policy_document)
+        network_policy.apply_removal_policy(RemovalPolicy.DESTROY)
         self.collection.add_dependency(network_policy)
         # Lambda CustomResource for creating the index in the Collection
         image = lambda_.DockerImageCode.from_image_asset('lambda/collections',
@@ -179,6 +182,7 @@ class AOSSKB(Construct):
                                                            name='assistant-col-access-policy',
                                                            type='data',
                                                            policy=policy)
+        data_access_policy.apply_removal_policy(RemovalPolicy.DESTROY)
         self.collection.add_dependency(data_access_policy)
 
         # Give permissions to the Lambda Role to execute the AWS API operations

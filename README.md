@@ -12,7 +12,7 @@ and to check and book slots at the hotel Spa.
 
 Please note that the bot will handle two types or reservations:
 * Hotel reservations. These are populated with random values every time the bot reads them and are assigned
-  to the user's WahtsApp/Telegram contact name. The details are not saved anywhere, which means that you 
+  to the user's WhatsApp/Telegram contact name. The details are not saved anywhere, which means that you 
   *will intentionally* get two different checkout dates if you ask the bot twice.
 * Spa reservations. For each reservation either the
   [Telegram user ID](https://docs.python-telegram-bot.org/en/v21.6/telegram.user.html#telegram.User) or the
